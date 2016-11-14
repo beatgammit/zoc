@@ -78,7 +78,7 @@ pub fn get_options(
         None => {
             for unit_id in unit_ids {
                 let unit = state.unit(unit_id);
-                if unit.player_id == player_id {
+                if unit.is_alive && unit.player_id == player_id {
                     options.selects.push(unit_id);
                 }
             }

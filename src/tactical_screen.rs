@@ -824,6 +824,7 @@ impl TacticalScreen {
             if let Some(id) = self.selected_unit_id {
                 let prev_id = core::find_prev_player_unit_id(
                     self.current_state(), self.core.player_id(), id);
+                // TODO: обработка мертвых юнитов
                 self.select_unit(context, prev_id);
             }
         } else if button_id == self.gui.button_next_unit_id {

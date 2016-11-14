@@ -117,6 +117,7 @@ impl InternalState {
         }
         *reinforcement_points -= cost;
         self.units.insert(unit_info.unit_id, Unit {
+            is_alive: true,
             id: unit_info.unit_id,
             pos: unit_info.pos,
             player_id: unit_info.player_id,
@@ -203,6 +204,7 @@ impl GameStateMut for InternalState {
                 // TODO: timer ticks on every player's turn! O.o
                 for (_, object) in &mut self.objects {
                     if let Some(ref mut timer) = object.timer {
+                        // println!("timer: {} -> {}", *timer, *timer - 1);
                         *timer -= 1;
                         assert!(*timer >= 0);
                     }
@@ -212,6 +214,7 @@ impl GameStateMut for InternalState {
                 self.add_unit(db, unit_info, InfoLevel::Full);
             },
             CoreEvent::AttackUnit{ref attack_info} => {
+                let count;
                 {
                     let unit = self.units.get_mut(&attack_info.defender_id)
                         .expect("Can`t find defender");
@@ -222,12 +225,17 @@ impl GameStateMut for InternalState {
                             move_points.n = 0;
                         }
                     }
+                    count = unit.count;
                 }
-                let count = self.units[&attack_info.defender_id].count;
                 if count <= 0 {
-                    // TODO: kill\unload passengers
-                    assert!(self.units.get(&attack_info.defender_id).is_some());
-                    self.units.remove(&attack_info.defender_id);
+                    if attack_info.leave_wrecks {
+                        // TODO: kill\unload passengers
+                        let unit = self.units.get_mut(&attack_info.defender_id).unwrap();
+                        unit.is_alive = false;
+                    } else {
+                        assert!(self.units.get(&attack_info.defender_id).is_some());
+                        self.units.remove(&attack_info.defender_id);
+                    }
                 }
                 let attacker_id = match attack_info.attacker_id {
                     Some(attacker_id) => attacker_id,

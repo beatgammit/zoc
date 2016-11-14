@@ -259,6 +259,7 @@ pub struct AttackInfo {
     pub remove_move_points: bool,
     pub is_ambush: bool,
     pub is_inderect: bool,
+    pub leave_wrecks: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -345,7 +346,7 @@ pub fn find_next_player_unit_id<S: GameState>(
     unit_id: UnitId,
 ) -> UnitId {
     let mut i = state.units().iter().cycle().filter(
-        |&(_, unit)| unit.player_id == player_id);
+        |&(_, unit)| unit.is_alive && unit.player_id == player_id);
     while let Some((&id, _)) = i.next() {
         if id == unit_id {
             let (&id, _) = i.next().unwrap();
@@ -362,7 +363,7 @@ pub fn find_prev_player_unit_id<S: GameState>(
     unit_id: UnitId,
 ) -> UnitId {
     let mut i = state.units().iter().cycle().filter(
-        |&(_, unit)| unit.player_id == player_id).peekable();
+        |&(_, unit)| unit.is_alive && unit.player_id == player_id).peekable();
     while let Some((&id, _)) = i.next() {
         let &(&next_id, _) = i.peek().unwrap();
         if next_id == unit_id {
@@ -807,6 +808,8 @@ impl Core {
         let is_ambush = !is_visible
             && thread_rng().gen_range(1, 100) <= ambush_chance;
         let per_death_suppression = 20;
+        let defender_type = self.db.unit_type(defender.type_id);
+        let leave_wrecks = defender_type.class != UnitClass::Infantry;
         let attack_info = AttackInfo {
             attacker_id: Some(attacker_id),
             defender_id: defender_id,
@@ -816,6 +819,7 @@ impl Core {
             remove_move_points: false,
             is_ambush: is_ambush,
             is_inderect: weapon_type.is_inderect,
+            leave_wrecks: leave_wrecks,
         };
         Some(CoreEvent::AttackUnit{attack_info: attack_info})
     }
