@@ -197,7 +197,7 @@ pub struct EventAttackUnitVisualizer {
     shell_move: Option<MoveHelper>,
     shell_node_id: Option<NodeId>,
     // is_inderect: bool,
-    info: AttackInfo,
+    attack_info: AttackInfo,
 }
 
 impl EventAttackUnitVisualizer {
@@ -208,9 +208,9 @@ impl EventAttackUnitVisualizer {
         shell_mesh_id: MeshId,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
-        let info = attack_info.clone();
-        let defender = state.unit(info.defender_id);
-        let defender_node_id = scene.unit_id_to_node_id(info.defender_id);
+        let attack_info = attack_info.clone();
+        let defender = state.unit(attack_info.defender_id);
+        let defender_node_id = scene.unit_id_to_node_id(attack_info.defender_id);
         let defender_pos = scene.node(defender_node_id).pos;
         let from = defender_pos;
         let to = WorldPos{v: from.v - vec3_z(geom::HEX_EX_RADIUS / 2.0)};
@@ -222,11 +222,11 @@ impl EventAttackUnitVisualizer {
         let move_helper = MoveHelper::new(from, to, 1.0);
         let mut shell_move = None;
         let mut shell_node_id = None;
-        if let Some(attacker_id) = info.attacker_id {
+        if let Some(attacker_id) = attack_info.attacker_id {
             let attacker_node_id = scene.unit_id_to_node_id(attacker_id);
             let attacker_pos = scene.node(attacker_node_id).pos;
             let attacker_map_pos = state.unit(attacker_id).pos.map_pos;
-            if info.mode == core::FireMode::Reactive {
+            if attack_info.mode == core::FireMode::Reactive {
                 map_text.add_text(attacker_map_pos, "reaction fire");
             }
             shell_node_id = Some(scene.add_node(SceneNode {
@@ -240,24 +240,24 @@ impl EventAttackUnitVisualizer {
             shell_move = Some(MoveHelper::new(
                 attacker_pos, defender_pos, shell_speed));
         }
-        if info.is_ambush {
+        if attack_info.is_ambush {
             map_text.add_text(defender.pos.map_pos, "Ambushed");
         };
-        let is_target_destroyed = defender.count - info.killed <= 0;
-        if info.killed > 0 {
+        let is_target_destroyed = defender.count - attack_info.killed <= 0;
+        if attack_info.killed > 0 {
             map_text.add_text(
                 defender.pos.map_pos,
-                &format!("-{}", info.killed),
+                &format!("-{}", attack_info.killed),
             );
         } else {
             map_text.add_text(defender.pos.map_pos, "miss");
         }
         let is_target_suppressed = defender.morale < 50
-            && defender.morale + info.suppression >= 50;
+            && defender.morale + attack_info.suppression >= 50;
         if !is_target_destroyed {
             map_text.add_text(
                 defender.pos.map_pos,
-                &format!("morale: -{}", info.suppression),
+                &format!("morale: -{}", attack_info.suppression),
             );
             if is_target_suppressed {
                 map_text.add_text(defender.pos.map_pos, "suppressed");
@@ -270,7 +270,7 @@ impl EventAttackUnitVisualizer {
             // killed: attack_info.killed,
             // is_inderect: attack_info.is_inderect,
 
-            info: info,
+            attack_info: attack_info,
 
             is_target_destroyed: is_target_destroyed,
             move_helper: move_helper,
@@ -282,7 +282,7 @@ impl EventAttackUnitVisualizer {
 
 impl EventVisualizer for EventAttackUnitVisualizer {
     fn is_finished(&self) -> bool {
-        if self.info.killed > 0 {
+        if self.attack_info.killed > 0 {
             self.move_helper.is_finished()
         } else if let Some(ref shell_move) = self.shell_move {
             shell_move.is_finished()
@@ -295,7 +295,7 @@ impl EventVisualizer for EventAttackUnitVisualizer {
         if let Some(ref mut shell_move) = self.shell_move {
             let shell_node_id = self.shell_node_id.unwrap();
             let mut pos = shell_move.step(dtime);
-            if self.info.is_inderect {
+            if self.attack_info.is_inderect {
                 pos.v.z += (shell_move.progress() * PI).sin() * 5.0;
             }
             scene.node_mut(shell_node_id).pos = pos;
@@ -312,15 +312,15 @@ impl EventVisualizer for EventAttackUnitVisualizer {
             self.shell_move = None;
             self.shell_node_id = None;
         }
-        if is_shell_ok && self.info.killed > 0 {
+        if is_shell_ok && self.attack_info.killed > 0 {
             let step = self.move_helper.step_diff(dtime);
             let children = &mut scene.node_mut(self.defender_node_id).children;
-            for i in 0 .. self.info.killed as usize {
+            for i in 0 .. self.attack_info.killed as usize {
                 let child = children.get_mut(i)
                     .expect("draw: no child");
                 // TODO: завести поле с информацией пехота это или техника
                 // и убирать так только пехоту
-                if !self.info.leave_wrecks {
+                if !self.attack_info.leave_wrecks {
                     child.pos.v += step;
                 }
             }
@@ -328,10 +328,10 @@ impl EventVisualizer for EventAttackUnitVisualizer {
     }
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
-        if self.info.killed > 0 {
+        if self.attack_info.killed > 0 {
             let children = &mut scene.node_mut(self.defender_node_id).children;
-            assert!(self.info.killed as usize <= children.len());
-            for i in 0 .. self.info.killed as usize {
+            assert!(self.attack_info.killed as usize <= children.len());
+            for i in 0 .. self.attack_info.killed as usize {
                 let child = children.get_mut(i).unwrap();
                 child.color = [0.3, 0.3, 0.3, 1.0];
             }
