@@ -336,8 +336,8 @@ impl EventVisualizer for EventAttackUnitVisualizer {
         if self.is_target_destroyed {
             // delete unit's marker
             scene.node_mut(self.defender_node_id).children.pop().unwrap();
-            assert_eq!(scene.node(self.defender_node_id).children.len(), 0);
             if !self.attack_info.leave_wrecks {
+                assert_eq!(scene.node(self.defender_node_id).children.len(), 0);
                 scene.remove_node(self.defender_node_id);
             }
         }
