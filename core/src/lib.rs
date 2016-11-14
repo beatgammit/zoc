@@ -809,7 +809,8 @@ impl Core {
             && thread_rng().gen_range(1, 100) <= ambush_chance;
         let per_death_suppression = 20;
         let defender_type = self.db.unit_type(defender.type_id);
-        let leave_wrecks = defender_type.class != UnitClass::Infantry;
+        let leave_wrecks = defender_type.class != UnitClass::Infantry
+            && !defender_type.is_air; // TODO: вертолеты должны падать и уничтожать все внизу
         let attack_info = AttackInfo {
             attacker_id: Some(attacker_id),
             defender_id: defender_id,
