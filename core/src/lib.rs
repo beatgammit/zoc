@@ -127,7 +127,7 @@ fn check_sectors(db: &Db, state: &InternalState) -> Vec<CoreEvent> {
         for &pos in &sector.positions {
             for unit in state.units_at(pos) {
                 let unit_type = db.unit_type(unit.type_id);
-                if !unit_type.is_air {
+                if !unit_type.is_air && unit.is_alive {
                     claimers.insert(unit.player_id);
                 }
             }
@@ -247,6 +247,7 @@ pub struct UnitInfo {
     pub type_id: UnitTypeId,
     pub player_id: PlayerId,
     pub passenger_id: Option<UnitId>,
+    pub is_alive: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -399,6 +400,7 @@ pub fn unit_to_info(unit: &Unit) -> UnitInfo {
         type_id: unit.type_id,
         player_id: unit.player_id,
         passenger_id: unit.passenger_id,
+        is_alive: unit.is_alive,
     }
 }
 
@@ -951,6 +953,7 @@ impl Core {
                         type_id: type_id,
                         player_id: self.current_player_id,
                         passenger_id: None,
+                        is_alive: true,
                     },
                 };
                 self.do_core_event(&event);

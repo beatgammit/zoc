@@ -117,7 +117,7 @@ impl InternalState {
         }
         *reinforcement_points -= cost;
         self.units.insert(unit_info.unit_id, Unit {
-            is_alive: true,
+            is_alive: unit_info.is_alive,
             id: unit_info.unit_id,
             pos: unit_info.pos,
             player_id: unit_info.player_id,
