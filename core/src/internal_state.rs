@@ -204,7 +204,6 @@ impl GameStateMut for InternalState {
                 // TODO: timer ticks on every player's turn! O.o
                 for (_, object) in &mut self.objects {
                     if let Some(ref mut timer) = object.timer {
-                        // println!("timer: {} -> {}", *timer, *timer - 1);
                         *timer -= 1;
                         assert!(*timer >= 0);
                     }

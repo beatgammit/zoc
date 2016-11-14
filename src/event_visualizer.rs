@@ -220,14 +220,6 @@ impl EventAttackUnitVisualizer {
         let defender_pos = scene.node(defender_node_id).pos;
         let from = defender_pos;
         let to = WorldPos{v: from.v - vec3_z(geom::HEX_EX_RADIUS / 2.0)};
-
-        // Медленно падать должен только вертолет.
-        // Сначала хотел добить поле в AttackInfo, но
-        // у нас и так есть вся необходимая информация: юнит мертв и он воздушный.
-        // надо не забыть убить все юниты на земле, кстати.
-
-        // Пехоту лучше заменять на трупики, но это в отдельной задаче.
-
         let move_helper = MoveHelper::new(from, to, 1.0);
         let mut shell_move = None;
         let mut shell_node_id = None;
