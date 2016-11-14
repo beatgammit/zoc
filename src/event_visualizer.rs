@@ -191,12 +191,10 @@ fn vec3_z(z: f32) -> Vector3<f32> {
 #[derive(Clone, Debug)]
 pub struct EventAttackUnitVisualizer {
     defender_node_id: NodeId,
-    // killed: i32,
     is_target_destroyed: bool,
     move_helper: MoveHelper,
     shell_move: Option<MoveHelper>,
     shell_node_id: Option<NodeId>,
-    // is_inderect: bool,
     attack_info: AttackInfo,
 }
 
@@ -216,8 +214,11 @@ impl EventAttackUnitVisualizer {
         let to = WorldPos{v: from.v - vec3_z(geom::HEX_EX_RADIUS / 2.0)};
 
         // Медленно падать должен только вертолет.
-        // Пехота молча пропадает, м?
-        // Пехоту лучше заменять на трупики
+        // Сначала хотел добить поле в AttackInfo, но
+        // у нас и так есть вся необходимая информация: юнит мертв и он воздушный.
+        // надо не забыть убить все юниты на земле, кстати.
+
+        // Пехоту лучше заменять на трупики, но это в отдельной задаче.
 
         let move_helper = MoveHelper::new(from, to, 1.0);
         let mut shell_move = None;
@@ -265,13 +266,7 @@ impl EventAttackUnitVisualizer {
         }
         Box::new(EventAttackUnitVisualizer {
             defender_node_id: defender_node_id,
-
-            // Эти два поля можно и удалить, раз я атак инфо храню
-            // killed: attack_info.killed,
-            // is_inderect: attack_info.is_inderect,
-
             attack_info: attack_info,
-
             is_target_destroyed: is_target_destroyed,
             move_helper: move_helper,
             shell_move: shell_move,
@@ -318,8 +313,6 @@ impl EventVisualizer for EventAttackUnitVisualizer {
             for i in 0 .. self.attack_info.killed as usize {
                 let child = children.get_mut(i)
                     .expect("draw: no child");
-                // TODO: завести поле с информацией пехота это или техника
-                // и убирать так только пехоту
                 if !self.attack_info.leave_wrecks {
                     child.pos.v += step;
                 }
@@ -332,19 +325,22 @@ impl EventVisualizer for EventAttackUnitVisualizer {
             let children = &mut scene.node_mut(self.defender_node_id).children;
             assert!(self.attack_info.killed as usize <= children.len());
             for i in 0 .. self.attack_info.killed as usize {
-                let child = children.get_mut(i).unwrap();
-                child.color = [0.3, 0.3, 0.3, 1.0];
+                if self.attack_info.leave_wrecks {
+                    let child = children.get_mut(i).unwrap();
+                    child.color = [0.3, 0.3, 0.3, 1.0];
+                } else {
+                    let _ = children.remove(0);
+                }
             }
         }
         if self.is_target_destroyed {
             // delete unit's marker
             scene.node_mut(self.defender_node_id).children.pop().unwrap();
+            assert_eq!(scene.node(self.defender_node_id).children.len(), 0);
+            if !self.attack_info.leave_wrecks {
+                scene.remove_node(self.defender_node_id);
+            }
         }
-        /*
-        if self.is_target_destroyed {
-            scene.remove_node(self.defender_node_id);
-        }
-        */
     }
 }
 
