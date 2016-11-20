@@ -145,6 +145,7 @@ impl InternalState {
             } else {
                 None
             },
+            coupled_id: unit_info.coupled_id,
         });
     }
 }

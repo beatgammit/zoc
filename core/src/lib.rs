@@ -250,6 +250,7 @@ pub struct UnitInfo {
     pub type_id: UnitTypeId,
     pub player_id: PlayerId,
     pub passenger_id: Option<UnitId>,
+    pub coupled_id: Option<UnitId>,
     pub is_alive: bool,
 }
 
@@ -403,6 +404,7 @@ pub fn unit_to_info(unit: &Unit) -> UnitInfo {
         type_id: unit.type_id,
         player_id: unit.player_id,
         passenger_id: unit.passenger_id,
+        coupled_id: unit.coupled_id,
         is_alive: unit.is_alive,
     }
 }
@@ -952,6 +954,7 @@ impl Core {
                         type_id: type_id,
                         player_id: self.current_player_id,
                         passenger_id: None,
+                        coupled_id: None,
                         is_alive: true,
                     },
                 };
