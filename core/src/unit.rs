@@ -16,6 +16,7 @@ pub struct Unit {
     pub count: i32,
     pub morale: i32,
     pub passenger_id: Option<UnitId>,
+    pub coupled_id: Option<UnitId>,
     pub is_alive: bool,
 }
 
@@ -54,5 +55,8 @@ pub struct UnitType {
     pub is_big: bool,
     pub is_air: bool,
     pub is_infantry: bool,
+    // не забудь что тащить может только объект
+    // равный или больший по размерам (size)
+    pub can_be_towed: bool,
     pub cost: i32,
 }
