@@ -16,10 +16,10 @@ assets = "assets"
 path = "core"
 
 [dependencies]
-gfx_core = "*"
-gfx_device_gl = "*"
-gfx_window_glutin = "*"
-gfx = "*"
+gfx_core = { git = 'https://github.com/gfx-rs/gfx' }
+gfx_device_gl = { git = 'https://github.com/gfx-rs/gfx' }
+gfx_window_glutin = { git = 'https://github.com/gfx-rs/gfx' }
+gfx = { git = 'https://github.com/gfx-rs/gfx' }
 glutin = "*"
 collision = "*"
 cgmath = "*"
