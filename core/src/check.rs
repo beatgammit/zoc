@@ -177,11 +177,9 @@ pub fn check_command<S: GameState>(
                 return Err(CommandError::BadPassengerId);
             }
             let passenger = state.unit(passenger_id);
-            /*
             if !passenger.is_alive {
                 return Err(CommandError::UnitIsDead);
             }
-            */
             let transporter = state.unit(transporter_id);
             if !transporter.is_alive {
                 return Err(CommandError::UnitIsDead);
@@ -195,11 +193,9 @@ pub fn check_command<S: GameState>(
             if !db.unit_type(transporter.type_id).is_transporter {
                 return Err(CommandError::BadTransporterType);
             }
-            /*
             if !db.unit_type(passenger.type_id).is_infantry {
                 return Err(CommandError::BadPassengerType);
             }
-            */
             if transporter.passenger_id.is_some() {
                 return Err(CommandError::TransporterIsNotEmpty);
             }

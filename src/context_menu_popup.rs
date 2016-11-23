@@ -100,8 +100,7 @@ pub fn get_options(
                         options.disable_reaction_fire = Some(selected_unit_id);
                     }
                 }
-            // } else if unit.is_alive {
-            } else {
+            } else if unit.is_alive {
                 options.selects.push(unit_id);
                 let load_command = core::Command::LoadUnit {
                     transporter_id: selected_unit_id,
