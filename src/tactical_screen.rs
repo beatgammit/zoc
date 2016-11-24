@@ -985,6 +985,12 @@ impl TacticalScreen {
                     &mut self.map_text_manager,
                 )
             },
+            CoreEvent::Attach{..} => {
+                unimplemented!() // TODO
+            },
+            CoreEvent::Detach{..} => {
+                unimplemented!() // TODO
+            },
             CoreEvent::SetReactionFireMode{unit_id, mode} => {
                 event_visualizer::EventSetReactionFireModeVisualizer::new(
                     state,

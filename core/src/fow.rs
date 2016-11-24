@@ -204,9 +204,13 @@ impl Fow {
                     fov_unit_in_pos(db, state, &mut self.map, unit, pos);
                 }
             },
+            CoreEvent::Detach{..} => {
+                // TODO: возможно надо что-то овое показать игроку
+            },
             CoreEvent::ShowUnit{..} |
             CoreEvent::HideUnit{..} |
             CoreEvent::LoadUnit{..} |
+            CoreEvent::Attach{..} |
             CoreEvent::SetReactionFireMode{..} |
             CoreEvent::SectorOwnerChanged{..} |
             CoreEvent::Smoke{..} |

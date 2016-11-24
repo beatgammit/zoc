@@ -249,11 +249,11 @@ pub fn check_command<S: GameState>(
             }
             Ok(())
         },
-        Command::Attach{transporter_id, coupled_unit_id} => {
+        Command::Attach{..} => {
             // TODO
             Ok(())
         },
-        Command::Detach{transporter_id, coupled_unit_id} => {
+        Command::Detach{..} => {
             // TODO
             Ok(())
         },

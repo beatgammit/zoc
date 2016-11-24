@@ -293,6 +293,12 @@ impl GameStateMut for InternalState {
                 }
                 self.add_unit(db, unit_info, InfoLevel::Partial);
             },
+            CoreEvent::Attach{..} => {
+                // TODO: ну, прикрепить юнит, да
+            },
+            CoreEvent::Detach{..} => {
+                // TODO: а теперь открепи
+            },
             CoreEvent::SetReactionFireMode{unit_id, mode} => {
                 self.units.get_mut(&unit_id)
                     .expect("Bad unit id")

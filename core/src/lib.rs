@@ -1043,10 +1043,10 @@ impl Core {
                 self.do_core_event(&event);
                 self.reaction_fire(passenger_id);
             },
-            Command::Attach{transporter_id, coupled_unit_id} => {
+            Command::Attach{..} => {
                 // TODO
             },
-            Command::Detach{transporter_id, coupled_unit_id} => {
+            Command::Detach{..} => {
                 // TODO
             },
             Command::SetReactionFireMode{unit_id, mode} => {

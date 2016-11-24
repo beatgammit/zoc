@@ -186,6 +186,12 @@ pub fn filter_events(
                 }
             }
         },
+        CoreEvent::Attach{..} => {
+            // TODO: ээээ
+        },
+        CoreEvent::Detach{..} => {
+            // TODO: ээээ
+        },
         CoreEvent::SetReactionFireMode{unit_id, ..} => {
             let unit = state.unit(unit_id);
             if unit.player_id == player_id {
