@@ -249,6 +249,14 @@ pub fn check_command<S: GameState>(
             }
             Ok(())
         },
+        Command::Attach{transporter_id, coupled_unit_id} => {
+            // TODO
+            Ok(())
+        },
+        Command::Detach{transporter_id, coupled_unit_id} => {
+            // TODO
+            Ok(())
+        },
         Command::SetReactionFireMode{unit_id, ..} => {
             let unit = match state.units().get(&unit_id) {
                 Some(unit) => unit,

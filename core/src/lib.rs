@@ -239,6 +239,8 @@ pub enum Command {
     AttackUnit{attacker_id: UnitId, defender_id: UnitId},
     LoadUnit{transporter_id: UnitId, passenger_id: UnitId},
     UnloadUnit{transporter_id: UnitId, passenger_id: UnitId, pos: ExactPos},
+    Attach{transporter_id: UnitId, coupled_unit_id: UnitId},
+    Detach{transporter_id: UnitId, coupled_unit_id: UnitId},
     SetReactionFireMode{unit_id: UnitId, mode: ReactionFireMode},
     Smoke{unit_id: UnitId, pos: MapPos},
 }
@@ -301,6 +303,19 @@ pub enum CoreEvent {
     UnloadUnit {
         unit_info: UnitInfo,
         transporter_id: Option<UnitId>,
+        from: ExactPos,
+        to: ExactPos,
+    },
+    Attach {
+        transporter_id: Option<UnitId>,
+        coupled_unit_id: UnitId,
+        from: ExactPos,
+        to: ExactPos,
+    },
+    Detach {
+        transporter_id: Option<UnitId>,
+        unit_info: UnitInfo,
+        // coupled_unit_id: UnitId, // или он видим будет и мне айдишника хватит?
         from: ExactPos,
         to: ExactPos,
     },
@@ -1027,6 +1042,12 @@ impl Core {
                 };
                 self.do_core_event(&event);
                 self.reaction_fire(passenger_id);
+            },
+            Command::Attach{transporter_id, coupled_unit_id} => {
+                // TODO
+            },
+            Command::Detach{transporter_id, coupled_unit_id} => {
+                // TODO
             },
             Command::SetReactionFireMode{unit_id, mode} => {
                 self.do_core_event(&CoreEvent::SetReactionFireMode {
