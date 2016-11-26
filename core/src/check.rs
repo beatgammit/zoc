@@ -170,17 +170,17 @@ pub fn check_command<S: GameState>(
             check_attack(db, state, attacker, defender, FireMode::Active)
         },
         Command::LoadUnit{transporter_id, passenger_id} => {
-            if state.units().get(&transporter_id).is_none() {
-                return Err(CommandError::BadTransporterId);
-            }
-            if state.units().get(&passenger_id).is_none() {
-                return Err(CommandError::BadPassengerId);
-            }
-            let passenger = state.unit(passenger_id);
+            let passenger = match state.units().get(&passenger_id) {
+                Some(passenger) => passenger,
+                None => return Err(CommandError::BadPassengerId),
+            };
             if !passenger.is_alive {
                 return Err(CommandError::UnitIsDead);
             }
-            let transporter = state.unit(transporter_id);
+            let transporter = match state.units().get(&transporter_id) {
+                Some(transporter) => transporter,
+                None => return Err(CommandError::BadTransporterId),
+            };
             if !transporter.is_alive {
                 return Err(CommandError::UnitIsDead);
             }
@@ -249,8 +249,45 @@ pub fn check_command<S: GameState>(
             }
             Ok(())
         },
-        Command::Attach{..} => {
-            // TODO
+        Command::Attach{transporter_id, coupled_unit_id, ..} => {
+            // TODO: по хорошему, это не траспортер нифига уже
+            // TODO: и пассажир совсем и не пассажир уже
+            // s/attach/drug?
+            let transporter = match state.units().get(&transporter_id) {
+                Some(transporter) => transporter,
+                None => return Err(CommandError::BadTransporterId),
+            };
+            if !transporter.is_alive {
+                return Err(CommandError::UnitIsDead);
+            }
+            if transporter.player_id != player_id {
+                return Err(CommandError::CanNotCommandEnemyUnits);
+            }
+            let transporter_type = db.unit_type(transporter.type_id);
+            if transporter_type.is_infantry {
+                unimplemented!(); // TODO: пехота не тащит
+            }
+            if transporter_type.is_air {
+                unimplemented!(); // TODO: воздушные юниты не тащат
+            }
+            if transporter.coupled_id.is_some() {
+                unimplemented!(); // TODO: только один буксир
+            }
+            let coupled_unit = match state.units().get(&coupled_unit_id) {
+                Some(coupled_unit) => coupled_unit,
+                // None => return Err(CommandError::BadTransporterId),
+                None => unimplemented!(), // TODO
+            };
+            let coupled_unit_type = db.unit_type(coupled_unit.type_id);
+            if coupled_unit_type.is_infantry {
+                return Err(CommandError::BadUnitType); // TODO: конкретнее
+            }
+            if coupled_unit_type.is_air {
+                return Err(CommandError::BadUnitType); // TODO: конкретнее
+            }
+            if distance(transporter.pos.map_pos, coupled_unit.pos.map_pos) > 1 {
+                return Err(CommandError::TransporterIsTooFarAway);
+            }
             Ok(())
         },
         Command::Detach{..} => {

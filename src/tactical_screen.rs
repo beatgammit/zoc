@@ -1212,6 +1212,14 @@ impl TacticalScreen {
                     pos: pos,
                 });
             },
+            context_menu_popup::Command::Attach{coupled_unit_id} => {
+                let selected_unit_id = self.selected_unit_id.unwrap();
+                self.core.do_command(Command::Attach {
+                    transporter_id: selected_unit_id,
+                    coupled_unit_id: coupled_unit_id,
+                });
+            },
+            // context_menu_popup::Command::Detach{pos} => { unimplemented!() }, // TODO
             context_menu_popup::Command::EnableReactionFire{id} => {
                 self.core.do_command(Command::SetReactionFireMode {
                     unit_id: id,

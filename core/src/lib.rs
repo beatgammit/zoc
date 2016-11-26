@@ -1044,9 +1044,11 @@ impl Core {
                 self.reaction_fire(passenger_id);
             },
             Command::Attach{..} => {
+                println!("Core::simulation_step: Attach");
                 // TODO
             },
             Command::Detach{..} => {
+                println!("Core::simulation_step: Detach");
                 // TODO
             },
             Command::SetReactionFireMode{unit_id, mode} => {
