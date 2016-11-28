@@ -308,7 +308,7 @@ pub enum CoreEvent {
     },
     Attach {
         transporter_id: UnitId,
-        coupled_unit_id: UnitId,
+        coupled_unit_id: UnitId, // TODO: сделать опциональным
         from: ExactPos,
         to: ExactPos,
     },

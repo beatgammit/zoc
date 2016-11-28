@@ -186,12 +186,18 @@ pub fn filter_events(
                 }
             }
         },
-        CoreEvent::Attach{transporter_id, ..} => {
+        CoreEvent::Attach{transporter_id, coupled_unit_id, ..} => {
             let transporter = state.unit(transporter_id);
+            let coupled_unit = state.unit(coupled_unit_id);
+            let is_copled_unit_vis = fow.is_visible(
+                db, state, coupled_unit, coupled_unit.pos);
             if transporter.player_id == player_id {
                 events.push(event.clone())
             } else {
-                unimplemented!() // TODO
+                // TODO: нормальная обработка. ТЕСТЫЫ?
+                if is_copled_unit_vis {
+                    events.push(event.clone())
+                }
             }
         },
         CoreEvent::Detach{..} => {
