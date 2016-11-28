@@ -64,7 +64,7 @@ pub fn filter_events(
         CoreEvent::Move{unit_id, from, to, ..} => {
             let unit = state.unit(unit_id);
             if unit.player_id == player_id {
-                events.push(event.clone())
+                events.push(event.clone());
             } else {
                 let prev_vis = fow.is_visible(db, state, unit, from);
                 let next_vis = fow.is_visible(db, state, unit, to);
@@ -186,10 +186,16 @@ pub fn filter_events(
                 }
             }
         },
-        CoreEvent::Attach{..} => {
-            // TODO: ээээ
+        CoreEvent::Attach{transporter_id, ..} => {
+            let transporter = state.unit(transporter_id);
+            if transporter.player_id == player_id {
+                events.push(event.clone())
+            } else {
+                unimplemented!() // TODO
+            }
         },
         CoreEvent::Detach{..} => {
+            unimplemented!()
             // TODO: ээээ
         },
         CoreEvent::SetReactionFireMode{unit_id, ..} => {

@@ -307,7 +307,7 @@ pub enum CoreEvent {
         to: ExactPos,
     },
     Attach {
-        transporter_id: Option<UnitId>,
+        transporter_id: UnitId,
         coupled_unit_id: UnitId,
         from: ExactPos,
         to: ExactPos,
@@ -453,6 +453,9 @@ pub fn print_unit_info(db: &Db, unit: &Unit) {
     }
     println!("  count: {}", unit.count);
     println!("  morale: {}", unit.morale);
+    println!("  passenger_id: {:?}", unit.passenger_id);
+    println!("  coupled_id: {:?}", unit.coupled_id);
+    println!("  is_alive: {:?}", unit.is_alive);
     println!("type:");
     println!("  name: {}", unit_type.name);
     println!("  is_infantry: {}", unit_type.is_infantry);
@@ -1043,13 +1046,20 @@ impl Core {
                 self.do_core_event(&event);
                 self.reaction_fire(passenger_id);
             },
-            Command::Attach{..} => {
+            Command::Attach{transporter_id, coupled_unit_id} => {
                 println!("Core::simulation_step: Attach");
-                // TODO
+                let from = self.state.unit(transporter_id).pos;
+                let to = self.state.unit(coupled_unit_id).pos;
+                self.do_core_event(&CoreEvent::Attach {
+                    transporter_id: transporter_id,
+                    coupled_unit_id: coupled_unit_id,
+                    from: from,
+                    to: to,
+                });
             },
             Command::Detach{..} => {
                 println!("Core::simulation_step: Detach");
-                // TODO
+                unimplemented!(); // TODO
             },
             Command::SetReactionFireMode{unit_id, mode} => {
                 self.do_core_event(&CoreEvent::SetReactionFireMode {

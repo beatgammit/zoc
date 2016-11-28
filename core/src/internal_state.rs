@@ -293,10 +293,14 @@ impl GameStateMut for InternalState {
                 }
                 self.add_unit(db, unit_info, InfoLevel::Partial);
             },
-            CoreEvent::Attach{..} => {
-                // TODO: ну, прикрепить юнит, да
+            CoreEvent::Attach{transporter_id, coupled_unit_id, to, ..} => {
+                let transporter = self.units.get_mut(&transporter_id)
+                    .expect("Bad transporter_id");
+                transporter.coupled_id = Some(coupled_unit_id);
+                transporter.pos = to;
             },
             CoreEvent::Detach{..} => {
+                unimplemented!(); // TODO
                 // TODO: а теперь открепи
             },
             CoreEvent::SetReactionFireMode{unit_id, mode} => {

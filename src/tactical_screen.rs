@@ -985,8 +985,18 @@ impl TacticalScreen {
                     &mut self.map_text_manager,
                 )
             },
-            CoreEvent::Attach{..} => {
-                unimplemented!() // TODO
+            CoreEvent::Attach{transporter_id, coupled_unit_id, ..} => {
+                let transporter_type_id = state.unit(transporter_id).type_id;
+                let unit_type_visual_info
+                    = self.unit_type_visual_info.get(transporter_type_id);
+                event_visualizer::EventAttachVisualizer::new(
+                    state,
+                    scene,
+                    transporter_id,
+                    coupled_unit_id,
+                    unit_type_visual_info,
+                    &mut self.map_text_manager,
+                )
             },
             CoreEvent::Detach{..} => {
                 unimplemented!() // TODO

@@ -703,3 +703,52 @@ impl EventVisualizer for EventRemoveSmokeVisualizer {
         scene.remove_object(self.object_id);
     }
 }
+
+pub struct EventAttachVisualizer {
+    transporter_id: UnitId,
+    coupled_unit_id: UnitId,
+    move_helper: MoveHelper,
+}
+
+impl EventAttachVisualizer {
+    pub fn new(
+        state: &PartialState,
+        scene: &mut Scene,
+        transporter_id: UnitId,
+        coupled_unit_id: UnitId,
+        unit_type_visual_info: &UnitTypeVisualInfo,
+        map_text: &mut MapTextManager,
+    ) -> Box<EventVisualizer> {
+        let transporter = state.unit(transporter_id);
+        let coupled_unit = state.unit(coupled_unit_id);
+        map_text.add_text(transporter.pos.map_pos, "attached");
+        let from = geom::exact_pos_to_world_pos(state, transporter.pos);
+        let to = geom::exact_pos_to_world_pos(state, coupled_unit.pos);
+        let transporter_node_id = scene.unit_id_to_node_id(transporter_id);
+        let unit_node = scene.node_mut(transporter_node_id);
+        unit_node.rot = geom::get_rot_angle(from, to);
+        let move_speed = unit_type_visual_info.move_speed;
+        Box::new(EventAttachVisualizer {
+            transporter_id: transporter_id,
+            coupled_unit_id: coupled_unit_id,
+            move_helper: MoveHelper::new(from, to, move_speed),
+        })
+    }
+}
+
+impl EventVisualizer for EventAttachVisualizer {
+    fn is_finished(&self) -> bool {
+        self.move_helper.is_finished()
+    }
+
+    fn draw(&mut self, scene: &mut Scene, dtime: Time) {
+        // TODO: сразу запомнить в структуре NodeId?
+        let node_id = scene.unit_id_to_node_id(self.transporter_id);
+        let node = scene.node_mut(node_id);
+        node.pos = self.move_helper.step(dtime);
+    }
+
+    fn end(&mut self, _: &mut Scene, _: &PartialState) {
+        // scene.remove_unit(self.passenger_id);
+    }
+}
