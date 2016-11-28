@@ -748,13 +748,12 @@ impl EventVisualizer for EventAttachVisualizer {
     }
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
-        {
-            let transporter_node = scene.node_mut(self.transporter_node_id);
-            transporter_node.children[0].pos.v.y = 0.5;
-        }
-        {
-            let coupled_unit_node = scene.node_mut(self.coupled_unit_node_id);
-            coupled_unit_node.children[0].pos.v.y = -0.5;
-        }
+        let mut node = scene.node_mut(self.coupled_unit_node_id)
+            .children.pop().unwrap();
+        node.pos.v.y = -0.5;
+        node.rot += Rad(PI);
+        let transporter_node = scene.node_mut(self.transporter_node_id);
+        transporter_node.children[0].pos.v.y = 0.5;
+        transporter_node.children.push(node);
     }
 }
