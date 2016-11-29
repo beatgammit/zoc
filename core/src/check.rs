@@ -265,18 +265,21 @@ pub fn check_command<S: GameState>(
             }
             let transporter_type = db.unit_type(transporter.type_id);
             if transporter_type.is_infantry {
-                unimplemented!(); // TODO: пехота не тащит
+                // TODO: пехота не тащит
+                return Err(CommandError::BadTransporterType);
             }
             if transporter_type.is_air {
-                unimplemented!(); // TODO: воздушные юниты не тащат
+                // TODO: воздушные юниты не тащат
+                return Err(CommandError::BadTransporterType);
             }
             if transporter.coupled_id.is_some() {
-                unimplemented!(); // TODO: только один буксир
+                // TODO: только один буксир
+                return Err(CommandError::TransporterIsNotEmpty);
             }
             let coupled_unit = match state.units().get(&coupled_unit_id) {
                 Some(coupled_unit) => coupled_unit,
-                // None => return Err(CommandError::BadTransporterId),
-                None => unimplemented!(), // TODO
+                // TODO: BadCoupledUnitId
+                None => return Err(CommandError::BadPassengerId),
             };
             let coupled_unit_type = db.unit_type(coupled_unit.type_id);
             if coupled_unit_type.is_infantry {
