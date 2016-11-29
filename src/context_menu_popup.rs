@@ -100,16 +100,17 @@ pub fn get_options(
                         options.disable_reaction_fire = Some(selected_unit_id);
                     }
                 }
-            } else if unit.is_alive {
-                options.selects.push(unit_id);
-                let load_command = core::Command::LoadUnit {
-                    transporter_id: selected_unit_id,
-                    passenger_id: unit_id,
-                };
-                if check_command(db, player_id, state, &load_command).is_ok() {
-                    options.loads.push(unit_id);
-                }
             } else {
+                if unit.is_alive {
+                    options.selects.push(unit_id);
+                    let load_command = core::Command::LoadUnit {
+                        transporter_id: selected_unit_id,
+                        passenger_id: unit_id,
+                    };
+                    if check_command(db, player_id, state, &load_command).is_ok() {
+                        options.loads.push(unit_id);
+                    }
+                }
                 let attach_command = core::Command::Attach {
                     transporter_id: selected_unit_id,
                     coupled_unit_id: unit_id,
