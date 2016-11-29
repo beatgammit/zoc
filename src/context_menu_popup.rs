@@ -113,7 +113,7 @@ pub fn get_options(
                 }
                 let attach_command = core::Command::Attach {
                     transporter_id: selected_unit_id,
-                    coupled_unit_id: unit_id,
+                    attached_unit_id: unit_id,
                 };
                 if check_command(db, player_id, state, &attach_command).is_ok() {
                     options.attaches.push(unit_id);
@@ -176,7 +176,7 @@ pub enum Command {
     Hunt{pos: ExactPos},
     Attack{id: UnitId},
     LoadUnit{passenger_id: UnitId},
-    Attach{coupled_unit_id: UnitId},
+    Attach{attached_unit_id: UnitId},
     UnloadUnit{pos: ExactPos},
     // Detach{pos: ExactPos}, // TODO: потом все равно понадобится
     EnableReactionFire{id: UnitId},
@@ -403,7 +403,7 @@ impl ContextMenuPopup {
         }
         if let Some(&unit_id) = self.attach_button_ids.get(&button_id) {
             self.return_command(context, Command::Attach {
-                coupled_unit_id: unit_id,
+                attached_unit_id: unit_id,
             });
             return;
         }

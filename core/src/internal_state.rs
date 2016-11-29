@@ -145,7 +145,7 @@ impl InternalState {
             } else {
                 None
             },
-            coupled_id: unit_info.coupled_id,
+            attached_unit_id: unit_info.attached_unit_id,
         });
     }
 }
@@ -293,10 +293,10 @@ impl GameStateMut for InternalState {
                 }
                 self.add_unit(db, unit_info, InfoLevel::Partial);
             },
-            CoreEvent::Attach{transporter_id, coupled_unit_id, to, ..} => {
+            CoreEvent::Attach{transporter_id, attached_unit_id, to, ..} => {
                 let transporter = self.units.get_mut(&transporter_id)
                     .expect("Bad transporter_id");
-                transporter.coupled_id = Some(coupled_unit_id);
+                transporter.attached_unit_id = Some(attached_unit_id);
                 transporter.pos = to;
             },
             CoreEvent::Detach{..} => {

@@ -239,8 +239,8 @@ pub enum Command {
     AttackUnit{attacker_id: UnitId, defender_id: UnitId},
     LoadUnit{transporter_id: UnitId, passenger_id: UnitId},
     UnloadUnit{transporter_id: UnitId, passenger_id: UnitId, pos: ExactPos},
-    Attach{transporter_id: UnitId, coupled_unit_id: UnitId},
-    Detach{transporter_id: UnitId, coupled_unit_id: UnitId},
+    Attach{transporter_id: UnitId, attached_unit_id: UnitId},
+    Detach{transporter_id: UnitId, attached_unit_id: UnitId},
     SetReactionFireMode{unit_id: UnitId, mode: ReactionFireMode},
     Smoke{unit_id: UnitId, pos: MapPos},
 }
@@ -252,7 +252,7 @@ pub struct UnitInfo {
     pub type_id: UnitTypeId,
     pub player_id: PlayerId,
     pub passenger_id: Option<UnitId>,
-    pub coupled_id: Option<UnitId>,
+    pub attached_unit_id: Option<UnitId>,
     pub is_alive: bool,
 }
 
@@ -308,14 +308,14 @@ pub enum CoreEvent {
     },
     Attach {
         transporter_id: UnitId,
-        coupled_unit_id: UnitId, // TODO: сделать опциональным
+        attached_unit_id: UnitId, // TODO: сделать опциональным
         from: ExactPos,
         to: ExactPos,
     },
     Detach {
         transporter_id: Option<UnitId>,
         unit_info: UnitInfo,
-        // coupled_unit_id: UnitId, // или он видим будет и мне айдишника хватит?
+        // attached_unit_id: UnitId, // или он видим будет и мне айдишника хватит?
         from: ExactPos,
         to: ExactPos,
     },
@@ -419,7 +419,7 @@ pub fn unit_to_info(unit: &Unit) -> UnitInfo {
         type_id: unit.type_id,
         player_id: unit.player_id,
         passenger_id: unit.passenger_id,
-        coupled_id: unit.coupled_id,
+        attached_unit_id: unit.attached_unit_id,
         is_alive: unit.is_alive,
     }
 }
@@ -454,7 +454,7 @@ pub fn print_unit_info(db: &Db, unit: &Unit) {
     println!("  count: {}", unit.count);
     println!("  morale: {}", unit.morale);
     println!("  passenger_id: {:?}", unit.passenger_id);
-    println!("  coupled_id: {:?}", unit.coupled_id);
+    println!("  attached_unit_id: {:?}", unit.attached_unit_id);
     println!("  is_alive: {:?}", unit.is_alive);
     println!("type:");
     println!("  name: {}", unit_type.name);
@@ -972,7 +972,7 @@ impl Core {
                         type_id: type_id,
                         player_id: self.current_player_id,
                         passenger_id: None,
-                        coupled_id: None,
+                        attached_unit_id: None,
                         is_alive: true,
                     },
                 };
@@ -1046,13 +1046,13 @@ impl Core {
                 self.do_core_event(&event);
                 self.reaction_fire(passenger_id);
             },
-            Command::Attach{transporter_id, coupled_unit_id} => {
+            Command::Attach{transporter_id, attached_unit_id} => {
                 println!("Core::simulation_step: Attach");
                 let from = self.state.unit(transporter_id).pos;
-                let to = self.state.unit(coupled_unit_id).pos;
+                let to = self.state.unit(attached_unit_id).pos;
                 self.do_core_event(&CoreEvent::Attach {
                     transporter_id: transporter_id,
-                    coupled_unit_id: coupled_unit_id,
+                    attached_unit_id: attached_unit_id,
                     from: from,
                     to: to,
                 });

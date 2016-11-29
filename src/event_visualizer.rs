@@ -706,7 +706,7 @@ impl EventVisualizer for EventRemoveSmokeVisualizer {
 
 pub struct EventAttachVisualizer {
     transporter_node_id: NodeId,
-    coupled_unit_node_id: NodeId,
+    attached_unit_node_id: NodeId,
     move_helper: MoveHelper,
 }
 
@@ -715,23 +715,23 @@ impl EventAttachVisualizer {
         state: &PartialState,
         scene: &mut Scene,
         transporter_id: UnitId,
-        coupled_unit_id: UnitId,
+        attached_unit_id: UnitId,
         unit_type_visual_info: &UnitTypeVisualInfo,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
         let transporter = state.unit(transporter_id);
-        let coupled_unit = state.unit(coupled_unit_id);
+        let attached_unit = state.unit(attached_unit_id);
         map_text.add_text(transporter.pos.map_pos, "attached");
         let from = geom::exact_pos_to_world_pos(state, transporter.pos);
-        let to = geom::exact_pos_to_world_pos(state, coupled_unit.pos);
+        let to = geom::exact_pos_to_world_pos(state, attached_unit.pos);
         let transporter_node_id = scene.unit_id_to_node_id(transporter_id);
-        let coupled_unit_node_id = scene.unit_id_to_node_id(coupled_unit_id);
+        let attached_unit_node_id = scene.unit_id_to_node_id(attached_unit_id);
         let unit_node = scene.node_mut(transporter_node_id);
         unit_node.rot = geom::get_rot_angle(from, to);
         let move_speed = unit_type_visual_info.move_speed;
         Box::new(EventAttachVisualizer {
             transporter_node_id: transporter_node_id,
-            coupled_unit_node_id: coupled_unit_node_id,
+            attached_unit_node_id: attached_unit_node_id,
             move_helper: MoveHelper::new(from, to, move_speed),
         })
     }
@@ -748,7 +748,7 @@ impl EventVisualizer for EventAttachVisualizer {
     }
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
-        let mut node = scene.node_mut(self.coupled_unit_node_id)
+        let mut node = scene.node_mut(self.attached_unit_node_id)
             .children.pop().unwrap();
         node.pos.v.y = -0.5;
         node.rot += Rad(PI);

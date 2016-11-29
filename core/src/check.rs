@@ -249,7 +249,7 @@ pub fn check_command<S: GameState>(
             }
             Ok(())
         },
-        Command::Attach{transporter_id, coupled_unit_id, ..} => {
+        Command::Attach{transporter_id, attached_unit_id, ..} => {
             // TODO: по хорошему, это не траспортер нифига уже
             // TODO: и пассажир совсем и не пассажир уже
             // s/attach/drug?
@@ -272,23 +272,23 @@ pub fn check_command<S: GameState>(
                 // TODO: воздушные юниты не тащат
                 return Err(CommandError::BadTransporterType);
             }
-            if transporter.coupled_id.is_some() {
+            if transporter.attached_unit_id.is_some() {
                 // TODO: только один буксир
                 return Err(CommandError::TransporterIsNotEmpty);
             }
-            let coupled_unit = match state.units().get(&coupled_unit_id) {
-                Some(coupled_unit) => coupled_unit,
+            let attached_unit = match state.units().get(&attached_unit_id) {
+                Some(attached_unit) => attached_unit,
                 // TODO: BadCoupledUnitId
                 None => return Err(CommandError::BadPassengerId),
             };
-            let coupled_unit_type = db.unit_type(coupled_unit.type_id);
-            if coupled_unit_type.is_infantry {
+            let attached_unit_type = db.unit_type(attached_unit.type_id);
+            if attached_unit_type.is_infantry {
                 return Err(CommandError::BadUnitType); // TODO: конкретнее
             }
-            if coupled_unit_type.is_air {
+            if attached_unit_type.is_air {
                 return Err(CommandError::BadUnitType); // TODO: конкретнее
             }
-            if distance(transporter.pos.map_pos, coupled_unit.pos.map_pos) > 1 {
+            if distance(transporter.pos.map_pos, attached_unit.pos.map_pos) > 1 {
                 return Err(CommandError::TransporterIsTooFarAway);
             }
             Ok(())

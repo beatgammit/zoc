@@ -985,7 +985,7 @@ impl TacticalScreen {
                     &mut self.map_text_manager,
                 )
             },
-            CoreEvent::Attach{transporter_id, coupled_unit_id, ..} => {
+            CoreEvent::Attach{transporter_id, attached_unit_id, ..} => {
                 let transporter_type_id = state.unit(transporter_id).type_id;
                 let unit_type_visual_info
                     = self.unit_type_visual_info.get(transporter_type_id);
@@ -993,7 +993,7 @@ impl TacticalScreen {
                     state,
                     scene,
                     transporter_id,
-                    coupled_unit_id,
+                    attached_unit_id,
                     unit_type_visual_info,
                     &mut self.map_text_manager,
                 )
@@ -1222,11 +1222,11 @@ impl TacticalScreen {
                     pos: pos,
                 });
             },
-            context_menu_popup::Command::Attach{coupled_unit_id} => {
+            context_menu_popup::Command::Attach{attached_unit_id} => {
                 let selected_unit_id = self.selected_unit_id.unwrap();
                 self.core.do_command(Command::Attach {
                     transporter_id: selected_unit_id,
-                    coupled_unit_id: coupled_unit_id,
+                    attached_unit_id: attached_unit_id,
                 });
             },
             // context_menu_popup::Command::Detach{pos} => { unimplemented!() }, // TODO
