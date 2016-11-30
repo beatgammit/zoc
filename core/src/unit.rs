@@ -55,7 +55,7 @@ pub struct UnitType {
     pub is_big: bool,
     pub is_air: bool,
     pub is_infantry: bool,
-    // не забудь что тащить может только объект
+    // TODO: не забудь что тащить может только объект
     // равный или больший по размерам (size)
     pub can_be_towed: bool,
     pub cost: i32,

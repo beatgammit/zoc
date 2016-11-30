@@ -51,10 +51,9 @@ fn can_detach_unit(
     pos: MapPos,
 ) -> Option<ExactPos> {
     let transporter = state.unit(transporter_id);
-    let attached_unit_id = match transporter.attached_unit_id {
-        Some(id) => id,
-        None => return None,
-    };
+    if transporter.attached_unit_id.is_none() {
+        return None;
+    }
     let type_id = transporter.type_id;
     let exact_pos = match core::get_free_exact_pos(db, state, type_id, pos) {
         Some(pos) => pos,
@@ -62,7 +61,6 @@ fn can_detach_unit(
     };
     let command = core::Command::Detach {
         transporter_id: transporter_id,
-        attached_unit_id: attached_unit_id,
         pos: exact_pos,
     };
     if check_command(db, transporter.player_id, state, &command).is_ok() {
@@ -463,7 +461,7 @@ impl ContextMenuPopup {
             });
         } else if id == self.detach_button_id {
             self.return_command(context, Command::Detach {
-                pos: self.options.unload_pos.unwrap(),
+                pos: self.options.detach_pos.unwrap(),
             });
         } else if id == self.smoke_button_id {
             self.return_command(context, Command::Smoke {

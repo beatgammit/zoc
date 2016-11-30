@@ -1230,15 +1230,8 @@ impl TacticalScreen {
                 });
             },
             context_menu_popup::Command::Detach{pos} => {
-                let selected_unit_id = self.selected_unit_id.unwrap();
-                let attached_unit_id = {
-                    let transporter = self.current_state()
-                        .unit(selected_unit_id);
-                    transporter.attached_unit_id.unwrap()
-                };
                 self.core.do_command(Command::Detach {
-                    transporter_id: selected_unit_id,
-                    attached_unit_id: attached_unit_id,
+                    transporter_id: self.selected_unit_id.unwrap(),
                     pos: pos,
                 });
             },

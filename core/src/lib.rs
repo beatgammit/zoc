@@ -240,7 +240,7 @@ pub enum Command {
     LoadUnit{transporter_id: UnitId, passenger_id: UnitId},
     UnloadUnit{transporter_id: UnitId, passenger_id: UnitId, pos: ExactPos},
     Attach{transporter_id: UnitId, attached_unit_id: UnitId},
-    Detach{transporter_id: UnitId, attached_unit_id: UnitId, pos: ExactPos},
+    Detach{transporter_id: UnitId, pos: ExactPos},
     SetReactionFireMode{unit_id: UnitId, mode: ReactionFireMode},
     Smoke{unit_id: UnitId, pos: MapPos},
 }
@@ -308,15 +308,16 @@ pub enum CoreEvent {
     },
     Attach {
         transporter_id: UnitId,
-        attached_unit_id: UnitId, // TODO: сделать опциональным
-        from: ExactPos,
-        to: ExactPos,
+        attached_unit_id: UnitId,
     },
     Detach {
-        transporter_id: Option<UnitId>,
-        unit_info: UnitInfo,
-        // attached_unit_id: UnitId, // или он видим будет и мне айдишника хватит?
-        from: ExactPos,
+        // TODO: как насчет того что если изначальная позиция была не видна,
+        // то просто показывать это все как движение транспортера?
+        // откуда наблюдателю знать что-то про погрузку-выгрузку?
+        //
+        // TODO: Это и Load/Unload должно касаться
+        //
+        transporter_id: UnitId,
         to: ExactPos,
     },
     SetReactionFireMode {
@@ -1047,19 +1048,16 @@ impl Core {
                 self.reaction_fire(passenger_id);
             },
             Command::Attach{transporter_id, attached_unit_id} => {
-                println!("Core::simulation_step: Attach");
-                let from = self.state.unit(transporter_id).pos;
-                let to = self.state.unit(attached_unit_id).pos;
                 self.do_core_event(&CoreEvent::Attach {
                     transporter_id: transporter_id,
                     attached_unit_id: attached_unit_id,
-                    from: from,
-                    to: to,
                 });
             },
-            Command::Detach{..} => {
-                println!("Core::simulation_step: Detach");
-                unimplemented!(); // TODO
+            Command::Detach{transporter_id, pos} => {
+                self.do_core_event(&CoreEvent::Detach {
+                    transporter_id: transporter_id,
+                    to: pos,
+                });
             },
             Command::SetReactionFireMode{unit_id, mode} => {
                 self.do_core_event(&CoreEvent::SetReactionFireMode {

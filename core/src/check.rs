@@ -224,9 +224,6 @@ pub fn check_command<S: GameState>(
             if !transporter.is_alive {
                 return Err(CommandError::UnitIsDead);
             }
-            if passenger.player_id != player_id {
-                return Err(CommandError::CanNotCommandEnemyUnits);
-            }
             if transporter.player_id != player_id {
                 return Err(CommandError::CanNotCommandEnemyUnits);
             }
@@ -293,8 +290,39 @@ pub fn check_command<S: GameState>(
             }
             Ok(())
         },
-        Command::Detach{..} => {
-            // TODO
+        Command::Detach{transporter_id, pos} => {
+            if state.units().get(&transporter_id).is_none() {
+                return Err(CommandError::BadTransporterId);
+            }
+            let transporter = state.unit(transporter_id);
+            if !transporter.is_alive {
+                return Err(CommandError::UnitIsDead);
+            }
+            let attached_unit_id = match transporter.attached_unit_id {
+                Some(id) => id,
+                None => return Err(CommandError::TransporterIsEmpty), // TODO: НетПрицепа
+            };
+            let _attached_unit = match state.units().get(&attached_unit_id) { // TODO: использовать?
+                Some(attached_unit) => attached_unit,
+                None => return Err(CommandError::BadPassengerId), // TODO: BadAttachedUnitId
+            };
+            if transporter.player_id != player_id {
+                return Err(CommandError::CanNotCommandEnemyUnits);
+            }
+            if distance(transporter.pos.map_pos, pos.map_pos) > 1 {
+                return Err(CommandError::UnloadDistanceIsTooBig);
+            }
+            if !is_exact_pos_free(db, state, transporter.type_id, pos) {
+                return Err(CommandError::DestinationTileIsNotEmpty);
+            }
+            // TODO: проверить цену движения самого грузовика
+            /*
+            let attached_unit_type = db.unit_type(attached_unit.type_id);
+            let cost = tile_cost(db, state, attached_unit, transporter.pos, pos);
+            if cost.n > attached_unit_type.move_points.n {
+                return Err(CommandError::NotEnoughMovePoints);
+            }
+            */
             Ok(())
         },
         Command::SetReactionFireMode{unit_id, ..} => {
