@@ -240,7 +240,7 @@ pub enum Command {
     LoadUnit{transporter_id: UnitId, passenger_id: UnitId},
     UnloadUnit{transporter_id: UnitId, passenger_id: UnitId, pos: ExactPos},
     Attach{transporter_id: UnitId, attached_unit_id: UnitId},
-    Detach{transporter_id: UnitId, attached_unit_id: UnitId},
+    Detach{transporter_id: UnitId, attached_unit_id: UnitId, pos: ExactPos},
     SetReactionFireMode{unit_id: UnitId, mode: ReactionFireMode},
     Smoke{unit_id: UnitId, pos: MapPos},
 }

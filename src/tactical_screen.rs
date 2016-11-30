@@ -1229,7 +1229,19 @@ impl TacticalScreen {
                     attached_unit_id: attached_unit_id,
                 });
             },
-            // context_menu_popup::Command::Detach{pos} => { unimplemented!() }, // TODO
+            context_menu_popup::Command::Detach{pos} => {
+                let selected_unit_id = self.selected_unit_id.unwrap();
+                let attached_unit_id = {
+                    let transporter = self.current_state()
+                        .unit(selected_unit_id);
+                    transporter.attached_unit_id.unwrap()
+                };
+                self.core.do_command(Command::Detach {
+                    transporter_id: selected_unit_id,
+                    attached_unit_id: attached_unit_id,
+                    pos: pos,
+                });
+            },
             context_menu_popup::Command::EnableReactionFire{id} => {
                 self.core.do_command(Command::SetReactionFireMode {
                     unit_id: id,

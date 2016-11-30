@@ -278,7 +278,7 @@ pub fn check_command<S: GameState>(
             }
             let attached_unit = match state.units().get(&attached_unit_id) {
                 Some(attached_unit) => attached_unit,
-                // TODO: BadCoupledUnitId
+                // TODO: BadAttachedUnitId
                 None => return Err(CommandError::BadPassengerId),
             };
             let attached_unit_type = db.unit_type(attached_unit.type_id);
