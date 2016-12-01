@@ -705,8 +705,8 @@ impl EventVisualizer for EventRemoveSmokeVisualizer {
 }
 
 pub struct EventAttachVisualizer {
-    transporter_node_id: NodeId,
-    attached_unit_node_id: NodeId,
+    transporter_id: UnitId,
+    attached_unit_id: UnitId,
     move_helper: MoveHelper,
 }
 
@@ -725,13 +725,12 @@ impl EventAttachVisualizer {
         let from = geom::exact_pos_to_world_pos(state, transporter.pos);
         let to = geom::exact_pos_to_world_pos(state, attached_unit.pos);
         let transporter_node_id = scene.unit_id_to_node_id(transporter_id);
-        let attached_unit_node_id = scene.unit_id_to_node_id(attached_unit_id);
         let unit_node = scene.node_mut(transporter_node_id);
         unit_node.rot = geom::get_rot_angle(from, to);
         let move_speed = unit_type_visual_info.move_speed;
         Box::new(EventAttachVisualizer {
-            transporter_node_id: transporter_node_id,
-            attached_unit_node_id: attached_unit_node_id,
+            transporter_id: transporter_id,
+            attached_unit_id: attached_unit_id,
             move_helper: MoveHelper::new(from, to, move_speed),
         })
     }
@@ -743,16 +742,20 @@ impl EventVisualizer for EventAttachVisualizer {
     }
 
     fn draw(&mut self, scene: &mut Scene, dtime: Time) {
-        let node = scene.node_mut(self.transporter_node_id);
+        let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
+        let node = scene.node_mut(transporter_node_id);
         node.pos = self.move_helper.step(dtime);
     }
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
-        let mut node = scene.node_mut(self.attached_unit_node_id)
-            .children.pop().unwrap();
+        let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
+        let attached_unit_node_id = scene.unit_id_to_node_id(self.attached_unit_id);
+        let mut node = scene.node_mut(attached_unit_node_id)
+            .children.remove(0);
+        scene.remove_unit(self.attached_unit_id);
         node.pos.v.y = -0.5;
         node.rot += Rad(PI);
-        let transporter_node = scene.node_mut(self.transporter_node_id);
+        let transporter_node = scene.node_mut(transporter_node_id);
         transporter_node.children[0].pos.v.y = 0.5;
         transporter_node.children.push(node);
     }
