@@ -998,8 +998,30 @@ impl TacticalScreen {
                     &mut self.map_text_manager,
                 )
             },
-            CoreEvent::Detach{..} => {
-                unimplemented!() // TODO
+            CoreEvent::Detach{transporter_id, pos} => {
+                let transporter = state.unit(transporter_id);
+                let attached_unit_id = transporter.attached_unit_id.unwrap();
+                let attached_unit = state.unit(attached_unit_id);
+                let transport_visual_info
+                    = self.unit_type_visual_info.get(transporter.type_id);
+                let attached_unit_visual_info
+                    = self.unit_type_visual_info.get(attached_unit.type_id);
+                let attached_unit_mesh_id = self.unit_type_visual_info
+                    .get(attached_unit.type_id).mesh_id;
+                event_visualizer::EventDetachVisualizer::new(
+                    self.core.db(),
+                    state,
+                    scene,
+                    transporter_id,
+                    pos,
+
+                    attached_unit_visual_info,
+                    attached_unit_mesh_id,
+                    self.mesh_ids.marker_mesh_id,
+
+                    transport_visual_info,
+                    &mut self.map_text_manager,
+                )
             },
             CoreEvent::SetReactionFireMode{unit_id, mode} => {
                 event_visualizer::EventSetReactionFireModeVisualizer::new(

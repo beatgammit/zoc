@@ -753,10 +753,82 @@ impl EventVisualizer for EventAttachVisualizer {
         let mut node = scene.node_mut(attached_unit_node_id)
             .children.remove(0);
         scene.remove_unit(self.attached_unit_id);
-        node.pos.v.y = -0.5;
+        node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
+        node.rot += Rad(PI);
+        let transporter_node = scene.node_mut(transporter_node_id);
+        transporter_node.children[0].pos.v.y = 0.5;
+        transporter_node.children.push(node); // TODO: точно он должен быть последним? Скорее надо добавлять в начало
+    }
+}
+
+pub struct EventDetachVisualizer {
+    transporter_id: UnitId,
+    attached_unit_id: UnitId, // TODO: оно мне вообще нужно еще?
+    move_helper: MoveHelper,
+}
+
+impl EventDetachVisualizer {
+    pub fn new(
+        db: &Db,
+        state: &PartialState,
+        scene: &mut Scene,
+        transporter_id: UnitId,
+        pos: ExactPos,
+
+        attached_unit_visual_info: &UnitTypeVisualInfo,
+        mesh_id: MeshId,
+        marker_mesh_id: MeshId,
+
+        transporter_visual_info: &UnitTypeVisualInfo, // TODO: добавить в имя транспортер
+        map_text: &mut MapTextManager,
+    ) -> Box<EventVisualizer> {
+        let transporter = state.unit(transporter_id);
+        let attached_unit_id = transporter.attached_unit_id.unwrap();
+        let attached_unit = state.unit(attached_unit_id);
+        let attached_unit_info = core::unit_to_info(&attached_unit);
+        show_unit_at(db, state, scene, &attached_unit_info, mesh_id, marker_mesh_id);
+        map_text.add_text(transporter.pos.map_pos, "detached");
+        let from = geom::exact_pos_to_world_pos(state, transporter.pos);
+        let to = geom::exact_pos_to_world_pos(state, pos);
+        let transporter_node_id = scene.unit_id_to_node_id(transporter_id);
+        let transporter_node = scene.node_mut(transporter_node_id);
+        transporter_node.rot = geom::get_rot_angle(from, to);
+        transporter_node.children[0].pos.v.y = 0.0; // возвращаем на место
+        transporter_node.children.pop(); // TODO: ???
+        let move_speed = transporter_visual_info.move_speed;
+        Box::new(EventDetachVisualizer {
+            transporter_id: transporter_id,
+            attached_unit_id: attached_unit_id,
+            move_helper: MoveHelper::new(from, to, move_speed),
+        })
+    }
+}
+
+impl EventVisualizer for EventDetachVisualizer {
+    fn is_finished(&self) -> bool {
+        self.move_helper.is_finished()
+    }
+
+    fn draw(&mut self, scene: &mut Scene, dtime: Time) {
+        let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
+        let node = scene.node_mut(transporter_node_id);
+        node.pos = self.move_helper.step(dtime);
+    }
+
+    fn end(&mut self, scene: &mut Scene, _: &PartialState) {
+        // TODO: наверное, мне тут нифига особо и не нужно?
+        // разве что точнее позицию транспортера поставить
+        /*
+        let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
+        let attached_unit_node_id = scene.unit_id_to_node_id(self.attached_unit_id);
+        let mut node = scene.node_mut(attached_unit_node_id)
+            .children.remove(0);
+        scene.remove_unit(self.attached_unit_id);
+        node.pos.v.y = -0.5; # TODO: смотреть в UnitTypeVisualInfo
         node.rot += Rad(PI);
         let transporter_node = scene.node_mut(transporter_node_id);
         transporter_node.children[0].pos.v.y = 0.5;
         transporter_node.children.push(node);
+        */
     }
 }
