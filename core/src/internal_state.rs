@@ -193,6 +193,10 @@ impl GameStateMut for InternalState {
                     let passenger = self.units.get_mut(&passenger_id).unwrap();
                     passenger.pos = to;
                 }
+                if let Some(attached_unit_id) = self.units[&unit_id].attached_unit_id {
+                    let attached_unit = self.units.get_mut(&attached_unit_id).unwrap();
+                    attached_unit.pos = to;
+                }
             },
             CoreEvent::EndTurn{new_id, old_id} => {
                 {
@@ -299,9 +303,10 @@ impl GameStateMut for InternalState {
                 transporter.attached_unit_id = Some(attached_unit_id);
                 transporter.pos = attached_unit_pos;
             },
-            CoreEvent::Detach{..} => {
-                unimplemented!(); // TODO
-                // TODO: а теперь открепи
+            CoreEvent::Detach{transporter_id, pos} => {
+                let transporter = self.units.get_mut(&transporter_id).unwrap();
+                transporter.attached_unit_id = None;
+                transporter.pos = pos;
             },
             CoreEvent::SetReactionFireMode{unit_id, mode} => {
                 self.units.get_mut(&unit_id)

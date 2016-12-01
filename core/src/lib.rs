@@ -318,7 +318,7 @@ pub enum CoreEvent {
         // TODO: Это и Load/Unload должно касаться
         //
         transporter_id: UnitId,
-        to: ExactPos,
+        pos: ExactPos,
     },
     SetReactionFireMode {
         unit_id: UnitId,
@@ -401,6 +401,9 @@ pub fn get_unit_ids_at(db: &Db, state: &PartialState, pos: MapPos) -> Vec<UnitId
         if db.unit_type(unit.type_id).is_transporter {
             if let Some(passenger_id) = unit.passenger_id {
                 hidden_ids.insert(passenger_id);
+            }
+            if let Some(attached_unit_id) = unit.attached_unit_id {
+                hidden_ids.insert(attached_unit_id);
             }
         }
     }
@@ -1056,7 +1059,7 @@ impl Core {
             Command::Detach{transporter_id, pos} => {
                 self.do_core_event(&CoreEvent::Detach {
                     transporter_id: transporter_id,
-                    to: pos,
+                    pos: pos,
                 });
             },
             Command::SetReactionFireMode{unit_id, mode} => {
