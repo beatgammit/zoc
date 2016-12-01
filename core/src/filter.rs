@@ -189,20 +189,32 @@ pub fn filter_events(
         CoreEvent::Attach{transporter_id, attached_unit_id, ..} => {
             let transporter = state.unit(transporter_id);
             let attached_unit = state.unit(attached_unit_id);
-            let is_copled_unit_vis = fow.is_visible(
+            let is_attached_unit_vis = fow.is_visible(
                 db, state, attached_unit, attached_unit.pos);
             if transporter.player_id == player_id {
                 events.push(event.clone())
             } else {
                 // TODO: нормальная обработка. ТЕСТЫЫ?
-                if is_copled_unit_vis {
+                // TODO: если видно только транспортер, то превращать в CoreEvent::Move
+                if is_attached_unit_vis {
                     events.push(event.clone())
                 }
             }
         },
-        CoreEvent::Detach{..} => {
-            unimplemented!()
-            // TODO: ээээ
+        CoreEvent::Detach{transporter_id, /* TODO pos*/..} => {
+            let transporter = state.unit(transporter_id);
+            // let attached_unit = state.unit(attached_unit_id);
+            let is_transporter_vis = fow.is_visible(
+                db, state, transporter, transporter.pos);
+            if transporter.player_id == player_id {
+                events.push(event.clone())
+            } else {
+                // TODO: нормальная обработка. ТЕСТЫЫ?
+                // TODO: если видно только транспортер, то превращать в CoreEvent::Move
+                if is_transporter_vis {
+                    events.push(event.clone())
+                }
+            }
         },
         CoreEvent::SetReactionFireMode{unit_id, ..} => {
             let unit = state.unit(unit_id);
