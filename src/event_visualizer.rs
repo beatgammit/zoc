@@ -706,7 +706,7 @@ impl EventVisualizer for EventRemoveSmokeVisualizer {
 
 pub struct EventAttachVisualizer {
     transporter_id: UnitId,
-    attached_unit_id: UnitId,
+    attached_unit_id: Option<UnitId>,
     move_helper: MoveHelper,
 }
 
@@ -715,12 +715,12 @@ impl EventAttachVisualizer {
         state: &PartialState,
         scene: &mut Scene,
         transporter_id: UnitId,
-        attached_unit_id: UnitId,
+        attached_unit_id: Option<UnitId>,
         unit_type_visual_info: &UnitTypeVisualInfo,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
         let transporter = state.unit(transporter_id);
-        let attached_unit = state.unit(attached_unit_id);
+        let attached_unit = state.unit(attached_unit_id.unwrap()); // TODO: убери анврап
         map_text.add_text(transporter.pos.map_pos, "attached");
         let from = geom::exact_pos_to_world_pos(state, transporter.pos);
         let to = geom::exact_pos_to_world_pos(state, attached_unit.pos);
@@ -749,15 +749,17 @@ impl EventVisualizer for EventAttachVisualizer {
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
         let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
-        let attached_unit_node_id = scene.unit_id_to_node_id(self.attached_unit_id);
-        let mut node = scene.node_mut(attached_unit_node_id)
-            .children.remove(0);
-        scene.remove_unit(self.attached_unit_id);
-        node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
-        node.rot += Rad(PI);
-        let transporter_node = scene.node_mut(transporter_node_id);
-        transporter_node.children[0].pos.v.y = 0.5;
-        transporter_node.children.push(node); // TODO: точно он должен быть последним? Скорее надо добавлять в начало
+        if let Some(attached_unit_id) = self.attached_unit_id {
+            let attached_unit_node_id = scene.unit_id_to_node_id(attached_unit_id);
+            let mut node = scene.node_mut(attached_unit_node_id)
+                .children.remove(0);
+            scene.remove_unit(attached_unit_id);
+            node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
+            node.rot += Rad(PI);
+            // TODO: точно он должен быть последним? Скорее надо добавлять в начало
+            scene.node_mut(transporter_node_id).children.push(node);
+        }
+        scene.node_mut(transporter_node_id).children[0].pos.v.y = 0.5;
     }
 }
 

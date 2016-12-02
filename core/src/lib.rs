@@ -308,7 +308,9 @@ pub enum CoreEvent {
     },
     Attach {
         transporter_id: UnitId,
-        attached_unit_id: UnitId,
+        attached_unit_id: Option<UnitId>,
+        from: ExactPos,
+        to: ExactPos,
     },
     Detach {
         // TODO: как насчет того что если изначальная позиция была не видна,
@@ -317,8 +319,11 @@ pub enum CoreEvent {
         //
         // TODO: Это и Load/Unload должно касаться
         //
+        // Как-то сложно это все, наверное хрен с ним
+        //
         transporter_id: UnitId,
-        pos: ExactPos,
+        from: ExactPos,
+        to: ExactPos,
     },
     SetReactionFireMode {
         unit_id: UnitId,
@@ -1051,15 +1056,21 @@ impl Core {
                 self.reaction_fire(passenger_id);
             },
             Command::Attach{transporter_id, attached_unit_id} => {
+                let from = self.state.unit(transporter_id).pos;
+                let to = self.state.unit(attached_unit_id).pos;
                 self.do_core_event(&CoreEvent::Attach {
                     transporter_id: transporter_id,
-                    attached_unit_id: attached_unit_id,
+                    attached_unit_id: Some(attached_unit_id),
+                    from: from,
+                    to: to,
                 });
             },
             Command::Detach{transporter_id, pos} => {
+                let from = self.state.unit(transporter_id).pos;
                 self.do_core_event(&CoreEvent::Detach {
                     transporter_id: transporter_id,
-                    pos: pos,
+                    from: from,
+                    to: pos,
                 });
             },
             Command::SetReactionFireMode{unit_id, mode} => {
