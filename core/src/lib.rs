@@ -43,7 +43,7 @@ pub struct HitChance{pub n: i32}
 #[derive(Clone, Copy, Debug)]
 pub struct Score{pub n: i32}
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MovePoints{pub n: i32}
 
 #[derive(Clone, Copy, Debug)]
@@ -245,7 +245,7 @@ pub enum Command {
     Smoke{unit_id: UnitId, pos: MapPos},
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UnitInfo {
     pub unit_id: UnitId,
     pub pos: ExactPos,
@@ -256,7 +256,7 @@ pub struct UnitInfo {
     pub is_alive: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct AttackInfo {
     pub attacker_id: Option<UnitId>,
     pub defender_id: UnitId,
@@ -269,7 +269,7 @@ pub struct AttackInfo {
     pub leave_wrecks: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CoreEvent {
     Move {
         unit_id: UnitId,
@@ -740,9 +740,12 @@ impl Core {
         next_id
     }
 
-    pub fn map_size(&self) -> Size2 {
+    // TODO: возможно, эта функция уже и не нужна
+    /*
+    fn map_size(&self) -> Size2 {
         self.state.map().size()
     }
+    */
 
     fn get_killed_count(&self, attacker: &Unit, defender: &Unit) -> i32 {
         let hit = self.attack_test(attacker, defender);
@@ -757,6 +760,8 @@ impl Core {
         }
     }
 
+    // TODO: это можно спокойно превратить во внешнюю функцию,
+    // пускай принимает состояние и db
     fn cover_bonus(&self, defender: &Unit) -> i32 {
         let defender_type = self.db.unit_type(defender.type_id);
         if defender_type.is_infantry {
@@ -770,6 +775,8 @@ impl Core {
         }
     }
 
+    // TODO: это можно спокойно превратить во внешнюю функцию,
+    // пускай принимает состояние и db
     pub fn hit_chance(&self, attacker: &Unit, defender: &Unit) -> HitChance {
         let attacker_type = self.db.unit_type(attacker.type_id);
         let defender_type = self.db.unit_type(defender.type_id);

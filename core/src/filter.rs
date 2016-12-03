@@ -4,7 +4,16 @@ use game_state::{GameState};
 use unit::{Unit};
 use db::{Db};
 use fow::{Fow};
-use ::{CoreEvent, AttackInfo, UnitInfo, UnitId, PlayerId, unit_to_info};
+use ::{
+    CoreEvent,
+    AttackInfo,
+    UnitInfo,
+    UnitId,
+    PlayerId,
+    MoveMode,
+    MovePoints,
+    unit_to_info,
+};
 
 pub fn get_visible_enemies(
     db: &Db,
@@ -189,31 +198,40 @@ pub fn filter_events(
                 }
             }
         },
-        CoreEvent::Attach{transporter_id, attached_unit_id, ..} => {
+        CoreEvent::Attach{transporter_id, attached_unit_id, from, to} => {
             let transporter = state.unit(transporter_id);
             if transporter.player_id == player_id {
                 events.push(event.clone())
             } else {
-                // active_unit_ids.insert(unit_id); // мне же оно надо, да?
+                // TODO: реакционный огонь?
                 let attached_unit_id = attached_unit_id.unwrap();
+                active_unit_ids.insert(transporter_id); // ?
+                // возможно мне не нужен сам прикрепляемый юнит, хватит и транспортера
                 let attached_unit = state.unit(attached_unit_id);
                 let is_attached_unit_vis = fow.is_visible(
-                    db, state, attached_unit, attached_unit.pos);
+                    db, state, attached_unit, to);
                 let is_transporter_vis = fow.is_visible(
-                    db, state, transporter, transporter.pos);
-                // начнем с прикрепления - тут надо просто движение прилепить
-                // TODO: нормальная обработка. ТЕСТЫЫ?
-                // TODO: если видно только транспортер, то превращать в CoreEvent::Move
+                    db, state, transporter, from);
                 if is_attached_unit_vis {
                     if !is_transporter_vis {
                         events.push(CoreEvent::ShowUnit {
-                            unit_info: unit_to_info(transporter),
+                            unit_info: UnitInfo {
+                                pos: from,
+                                attached_unit_id: None,
+                                .. unit_to_info(transporter)
+                            },
                         });
                     }
                     events.push(event.clone())
                 } else {
                     if is_transporter_vis {
-                        // тут транспортер уезжает и пропадает просто
+                        events.push(CoreEvent::Move {
+                            unit_id: transporter_id,
+                            mode: MoveMode::Fast,
+                            cost: MovePoints{n: 0},
+                            from: from,
+                            to: to,
+                        });
                         events.push(CoreEvent::HideUnit {
                             unit_id: transporter_id,
                         });
@@ -221,18 +239,45 @@ pub fn filter_events(
                 }
             }
         },
-        CoreEvent::Detach{transporter_id, /* TODO pos*/..} => {
+        // TODO: ты продумал что там с реакционным огнем?
+        // хотя это в simulation_step обрабатываться должно
+        //
+        // TODO: ты продумал что там с уничтожением буксира с прицепом?
+        // TODO: ты продумал что там с уничтожением транспортера с пассажирами (высади их уже)
+        CoreEvent::Detach{transporter_id, from, to} => {
             let transporter = state.unit(transporter_id);
             if transporter.player_id == player_id {
                 events.push(event.clone())
             } else {
-                // let attached_unit = state.unit(attached_unit_id);
-                let is_transporter_vis = fow.is_visible(
-                    db, state, transporter, transporter.pos);
-                // TODO: нормальная обработка. ТЕСТЫЫ?
-                // TODO: если видно только транспортер, то превращать в CoreEvent::Move
-                if is_transporter_vis {
-                    events.push(event.clone())
+                active_unit_ids.insert(transporter_id);
+                let is_from_vis = fow.is_visible(
+                    db, state, transporter, from);
+                let is_to_vis = fow.is_visible(
+                    db, state, transporter, to);
+                if is_from_vis {
+                    events.push(event.clone());
+                    if !is_to_vis {
+                        events.push(CoreEvent::HideUnit {
+                            unit_id: transporter_id,
+                        });
+                    }
+               } else {
+                    if is_to_vis {
+                        events.push(CoreEvent::ShowUnit {
+                            unit_info: UnitInfo {
+                                pos: from,
+                                attached_unit_id: None,
+                                .. unit_to_info(transporter)
+                            },
+                        });
+                        events.push(CoreEvent::Move {
+                            unit_id: transporter_id,
+                            mode: MoveMode::Fast,
+                            cost: MovePoints{n: 0},
+                            from: from,
+                            to: to,
+                        });
+                    }
                 }
             }
         },
