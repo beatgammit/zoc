@@ -998,7 +998,7 @@ impl TacticalScreen {
                     &mut self.map_text_manager,
                 )
             },
-            CoreEvent::Detach{transporter_id, from, to} => {
+            CoreEvent::Detach{transporter_id, to, ..} => {
                 let transporter = state.unit(transporter_id);
                 let attached_unit_id = transporter.attached_unit_id.unwrap();
                 let attached_unit = state.unit(attached_unit_id);

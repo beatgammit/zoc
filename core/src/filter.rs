@@ -84,6 +84,16 @@ pub fn filter_events(
                             .. unit_to_info(unit)
                         },
                     });
+                    if let Some(attached_unit_id) = unit.attached_unit_id {
+                        active_unit_ids.insert(attached_unit_id);
+                        let attached_unit = state.unit(attached_unit_id);
+                        events.push(CoreEvent::ShowUnit {
+                            unit_info: UnitInfo {
+                                pos: from,
+                                .. unit_to_info(attached_unit)
+                            },
+                        });
+                    }
                 }
                 if prev_vis || next_vis {
                     events.push(event.clone());

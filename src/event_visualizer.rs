@@ -85,6 +85,32 @@ impl EventVisualizer for EventEndTurnVisualizer {
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }
 
+fn xxx(scene: &mut Scene, unit_info: &UnitInfo) {
+    println!("{:?} {:?}", unit_info.unit_id, unit_info.pos);
+    let attached_unit_id = match unit_info.attached_unit_id {
+        Some(id) => id,
+        None => return,
+    };
+    println!("2");
+    let attached_unit_node_id = match scene.unit_id_to_node_id_opt(attached_unit_id) {
+        Some(id) => id,
+        None => return, // все в порядке
+    };
+    println!("3");
+    // тут вот код порядочно дублируется
+    {
+        let transporter_node_id = scene.unit_id_to_node_id(unit_info.unit_id);
+        let mut node = scene.node_mut(attached_unit_node_id)
+            .children.remove(0);
+        scene.remove_unit(attached_unit_id);
+        node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
+        node.rot += Rad(PI);
+        // TODO: точно он должен быть последним? Скорее надо добавлять в начало
+        scene.node_mut(transporter_node_id).children.push(node);
+        scene.node_mut(transporter_node_id).children[0].pos.v.y = 0.5;
+    }
+}
+
 fn show_unit_at(
     db: &Db,
     state: &PartialState,
@@ -93,8 +119,9 @@ fn show_unit_at(
     mesh_id: MeshId,
     marker_mesh_id: MeshId,
 ) {
-    let world_pos = geom::exact_pos_to_world_pos(state, unit_info.pos);
-    let to = world_pos;
+    // TODO: тут нужна проверка что в этой клетке нет буксира или буксируемого.
+    // если таковой находится, то надо все двигать
+    let to = geom::exact_pos_to_world_pos(state, unit_info.pos);
     let rot = Rad(thread_rng().gen_range(0.0, PI * 2.0));
     let mut children = get_unit_scene_nodes(db, unit_info, mesh_id);
     if unit_info.is_alive {
@@ -113,6 +140,15 @@ fn show_unit_at(
         color: [1.0, 1.0, 1.0, 1.0],
         children: children,
     });
+    {
+        // находим есть ли в этой клетке юнит с буксиром,
+        // смотрим есть ли у буксируемого юнита свой узел в графе
+        // если есть - переносим его детей в узел к транспорту и убиваем узел буксируемого
+        xxx(scene, unit_info);
+        for unit in state.units_at(unit_info.pos.map_pos) {
+            xxx(scene, &core::unit_to_info(unit));
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -355,6 +391,7 @@ impl EventShowUnitVisualizer {
         marker_mesh_id: MeshId,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
+        println!("SHOW UNIT {:?}", unit_info);
         map_text.add_text(unit_info.pos.map_pos, "spotted");
         show_unit_at(db, state, scene, unit_info, mesh_id, marker_mesh_id);
         Box::new(EventShowUnitVisualizer)
@@ -765,7 +802,7 @@ impl EventVisualizer for EventAttachVisualizer {
 
 pub struct EventDetachVisualizer {
     transporter_id: UnitId,
-    attached_unit_id: UnitId, // TODO: оно мне вообще нужно еще?
+    // attached_unit_id: UnitId, // TODO: оно мне вообще нужно еще?
     move_helper: MoveHelper,
 }
 
@@ -777,7 +814,7 @@ impl EventDetachVisualizer {
         transporter_id: UnitId,
         pos: ExactPos,
 
-        attached_unit_visual_info: &UnitTypeVisualInfo,
+        _attached_unit_visual_info: &UnitTypeVisualInfo, // TODO
         mesh_id: MeshId,
         marker_mesh_id: MeshId,
 
@@ -800,7 +837,7 @@ impl EventDetachVisualizer {
         let move_speed = transporter_visual_info.move_speed;
         Box::new(EventDetachVisualizer {
             transporter_id: transporter_id,
-            attached_unit_id: attached_unit_id,
+            // attached_unit_id: attached_unit_id,
             move_helper: MoveHelper::new(from, to, move_speed),
         })
     }
@@ -817,20 +854,8 @@ impl EventVisualizer for EventDetachVisualizer {
         node.pos = self.move_helper.step(dtime);
     }
 
-    fn end(&mut self, scene: &mut Scene, _: &PartialState) {
+    fn end(&mut self, _: &mut Scene, _: &PartialState) {
         // TODO: наверное, мне тут нифига особо и не нужно?
         // разве что точнее позицию транспортера поставить
-        /*
-        let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
-        let attached_unit_node_id = scene.unit_id_to_node_id(self.attached_unit_id);
-        let mut node = scene.node_mut(attached_unit_node_id)
-            .children.remove(0);
-        scene.remove_unit(self.attached_unit_id);
-        node.pos.v.y = -0.5; # TODO: смотреть в UnitTypeVisualInfo
-        node.rot += Rad(PI);
-        let transporter_node = scene.node_mut(transporter_node_id);
-        transporter_node.children[0].pos.v.y = 0.5;
-        transporter_node.children.push(node);
-        */
     }
 }
