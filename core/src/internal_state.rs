@@ -300,15 +300,27 @@ impl GameStateMut for InternalState {
             CoreEvent::Attach{transporter_id, attached_unit_id, to, ..} => {
                 let transporter = self.units.get_mut(&transporter_id).unwrap();
                 transporter.pos = to;
+                if let Some(ref mut move_points) = transporter.move_points {
+                    move_points.n = 0;
+                }
                 // страннота какая-то
                 if let Some(attached_unit_id) = attached_unit_id {
                     transporter.attached_unit_id = Some(attached_unit_id);
                 }
             },
             CoreEvent::Detach{transporter_id, to, ..} => {
+                if let Some(attached_unit_id) = self.unit(transporter_id).attached_unit_id {
+                    let attached_unit = self.units.get_mut(&attached_unit_id).unwrap();
+                    if let Some(ref mut move_points) = attached_unit.move_points {
+                        move_points.n = 0;
+                    }
+                }
                 let transporter = self.units.get_mut(&transporter_id).unwrap();
                 transporter.attached_unit_id = None;
                 transporter.pos = to;
+                if let Some(ref mut move_points) = transporter.move_points {
+                    move_points.n = 0;
+                }
             },
             CoreEvent::SetReactionFireMode{unit_id, mode} => {
                 self.units.get_mut(&unit_id)

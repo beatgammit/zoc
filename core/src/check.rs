@@ -246,7 +246,7 @@ pub fn check_command<S: GameState>(
             }
             Ok(())
         },
-        Command::Attach{transporter_id, attached_unit_id, ..} => {
+        Command::Attach{transporter_id, attached_unit_id} => {
             // TODO: и пассажир совсем и не пассажир уже
             let transporter = match state.units().get(&transporter_id) {
                 Some(transporter) => transporter,
@@ -286,6 +286,25 @@ pub fn check_command<S: GameState>(
             if distance(transporter.pos.map_pos, attached_unit.pos.map_pos) > 1 {
                 return Err(CommandError::TransporterIsTooFarAway);
             }
+            let transporter_move_points = transporter.move_points.unwrap();
+            //
+            // TODO: проверить, что транспортер туда вообще может
+            // проехать.
+            // хз только как игнорировать штраф за сам буксир в целевой клетке.
+            //
+            // let from = transporter.pos;
+            // let to = attached_unit.pos;
+            // let cost = tile_cost(db, state, transporter, from, to);
+            //
+            if transporter_move_points.n <= 0 {
+                return Err(CommandError::NotEnoughMovePoints);
+            }
+            if attached_unit.is_alive {
+                let attached_unit_move_points = attached_unit.move_points.unwrap();
+                if attached_unit_move_points.n <= 0 {
+                    return Err(CommandError::NotEnoughMovePoints);
+                }
+            }
             Ok(())
         },
         Command::Detach{transporter_id, pos} => {
@@ -311,6 +330,10 @@ pub fn check_command<S: GameState>(
             }
             if !is_exact_pos_free(db, state, transporter.type_id, pos) {
                 return Err(CommandError::DestinationTileIsNotEmpty);
+            }
+            let transporter_move_points = transporter.move_points.unwrap();
+            if transporter_move_points.n <= 0 {
+                return Err(CommandError::NotEnoughMovePoints);
             }
             // TODO: проверить цену движения самого грузовика
             /*
