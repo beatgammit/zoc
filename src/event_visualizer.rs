@@ -432,9 +432,41 @@ impl EventHideUnitVisualizer {
         unit_id: UnitId,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
-        let pos = state.unit(unit_id).pos.map_pos;
-        map_text.add_text(pos, "lost");
-        scene.remove_unit(unit_id);
+        // из core/src/filter.rs:
+        //
+        // проверить, нет ли буксира.
+        // если есть, добавить его в активные юниты
+        // и тоже спрятать? или не прятать, хм
+        //
+        // этот юнит должен быть удален из состояния,
+        // но визализатор пока что падает на его удалении,
+        // т.к. узла сцены для него нет.
+        //
+        // наверное, надо бы править визуализатор, так?
+        //
+        // ведь появление этих объектов сопровождается обычными
+        // ShowUnit.
+
+        // сначала удаляется транспортер, потом буксир.
+        // т.е. к моменту обработки события Hide для буксира
+        // я уже не могу узнать был ли он буксируемым.
+        //
+        // Разве что для него не будет узла в сцене.
+        // Но как-то не круто полагаться только на это.
+        // Это может замаскировать реальную ошибку.
+        // Наверное, стоит переделать весь механизм отображения
+        // буксиров как-то.
+        // Хз только как.
+        println!("EventHideUnitVisualizer: {:?}", unit_id);
+
+        if scene.unit_id_to_node_id_opt(unit_id).is_some() {
+            println!("hide unit from scene graph");
+            let pos = state.unit(unit_id).pos.map_pos;
+            map_text.add_text(pos, "lost");
+            scene.remove_unit(unit_id);
+        } else {
+            println!("Skipping removing of attached unit from scene");
+        }
         Box::new(EventHideUnitVisualizer)
     }
 }
