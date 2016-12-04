@@ -27,7 +27,6 @@ use types::{Size2};
 use misc::{clamp};
 use internal_state::{InternalState};
 use game_state::{GameState, GameStateMut, ObjectsAtIter};
-use partial_state::{PartialState};
 use map::{Map, Terrain};
 use pathfinder::{tile_cost};
 use unit::{Unit, UnitTypeId};
@@ -391,22 +390,34 @@ pub fn find_prev_player_unit_id<S: GameState>(
     unreachable!()
 }
 
-pub fn get_unit_ids_at(db: &Db, state: &PartialState, pos: MapPos) -> Vec<UnitId> {
-    let units_at = state.units_at(pos);
-    let mut hidden_ids = HashSet::new();
-    for unit in units_at.clone() {
-        if db.unit_type(unit.type_id).is_transporter {
-            if let Some(passenger_id) = unit.passenger_id {
-                hidden_ids.insert(passenger_id);
+pub fn is_unit_passenger_or_attached<S: GameState>(
+    db: &Db,
+    state: &S,
+    unit_id: UnitId,
+) -> bool {
+    let unit = state.unit(unit_id);
+    for transporter in state.units_at(unit.pos.map_pos) {
+        if !db.unit_type(transporter.type_id).is_transporter {
+            continue;
+        }
+        if let Some(passenger_id) = transporter.passenger_id {
+            if passenger_id == unit_id {
+                return true;
             }
-            if let Some(attached_unit_id) = unit.attached_unit_id {
-                hidden_ids.insert(attached_unit_id);
+        }
+        if let Some(attached_unit_id) = transporter.attached_unit_id {
+            if attached_unit_id == unit_id {
+                return true;
             }
         }
     }
+    false
+}
+
+pub fn get_unit_ids_at<S: GameState>(db: &Db, state: &S, pos: MapPos) -> Vec<UnitId> {
     let mut ids = Vec::new();
-    for unit in units_at {
-        if !hidden_ids.contains(&unit.id) {
+    for unit in state.units_at(pos) {
+        if !is_unit_passenger_or_attached(db, state, unit.id) {
             ids.push(unit.id)
         }
     }
@@ -876,6 +887,9 @@ impl Core {
         let unit_ids: Vec<_> = self.state.units().keys().cloned().collect();
         let mut result = ReactionFireResult::None;
         for enemy_unit_id in unit_ids {
+            if is_unit_passenger_or_attached(&self.db, &self.state, enemy_unit_id) {
+                continue;
+            }
             let event = {
                 let enemy_unit = self.state.unit(enemy_unit_id);
                 let unit = self.state.unit(unit_id);
@@ -1057,6 +1071,7 @@ impl Core {
                     from: from,
                     to: to,
                 });
+                self.reaction_fire(transporter_id);
             },
             Command::Detach{transporter_id, pos} => {
                 let from = self.state.unit(transporter_id).pos;
@@ -1065,6 +1080,7 @@ impl Core {
                     from: from,
                     to: pos,
                 });
+                self.reaction_fire(transporter_id);
             },
             Command::SetReactionFireMode{unit_id, mode} => {
                 self.do_core_event(&CoreEvent::SetReactionFireMode {
