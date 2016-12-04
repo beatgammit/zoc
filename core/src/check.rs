@@ -273,6 +273,9 @@ pub fn check_command<S: GameState>(
                 // TODO: только один буксир
                 return Err(CommandError::TransporterIsNotEmpty);
             }
+            // TODO: проверять цену движения
+            // TODO: передвижение с буксиром должно стоить больше
+            // TODO: перевозка полевых орудий?
             let attached_unit = match state.units().get(&attached_unit_id) {
                 Some(attached_unit) => attached_unit,
                 // TODO: BadAttachedUnitId

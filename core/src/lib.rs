@@ -793,7 +793,7 @@ impl Core {
         r < k
     }
 
-    pub fn player(&self) -> &Player {
+    fn player(&self) -> &Player {
         &self.players[self.player_id().id as usize]
     }
 
