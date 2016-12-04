@@ -282,10 +282,11 @@ pub fn check_command<S: GameState>(
                 None => return Err(CommandError::BadPassengerId),
             };
             let attached_unit_type = db.unit_type(attached_unit.type_id);
-            if attached_unit_type.is_infantry {
+            if attached_unit_type.size > transporter_type.size {
+                // слишком большой груз
                 return Err(CommandError::BadUnitType); // TODO: конкретнее
             }
-            if attached_unit_type.is_air {
+            if !attached_unit_type.can_be_towed {
                 return Err(CommandError::BadUnitType); // TODO: конкретнее
             }
             if distance(transporter.pos.map_pos, attached_unit.pos.map_pos) > 1 {
