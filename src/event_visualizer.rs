@@ -3,7 +3,18 @@ use rand::{thread_rng, Rng};
 use cgmath::{Vector3, Rad};
 use core::partial_state::{PartialState};
 use core::game_state::{GameState};
-use core::{self, UnitInfo, AttackInfo, ReactionFireMode, UnitId, ExactPos, PlayerId, SectorId, MapPos, ObjectId};
+use core::{
+    self,
+    UnitInfo,
+    AttackInfo,
+    ReactionFireMode,
+    UnitId,
+    ExactPos,
+    PlayerId,
+    SectorId,
+    MapPos,
+    ObjectId
+};
 use core::db::{Db};
 use types::{WorldPos, Time, Speed};
 use mesh::{MeshId};
@@ -85,19 +96,19 @@ impl EventVisualizer for EventEndTurnVisualizer {
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }
 
-fn xxx(scene: &mut Scene, unit_info: &UnitInfo) {
-    println!("{:?} {:?}", unit_info.unit_id, unit_info.pos);
+fn try_to_fix_attached_unit_pos(scene: &mut Scene, unit_info: &UnitInfo) {
     let attached_unit_id = match unit_info.attached_unit_id {
         Some(id) => id,
         None => return,
     };
-    println!("2");
-    let attached_unit_node_id = match scene.unit_id_to_node_id_opt(attached_unit_id) {
+    let attached_unit_node_id
+        = match scene.unit_id_to_node_id_opt(attached_unit_id)
+    {
         Some(id) => id,
-        None => return, // все в порядке
+        // этот юнит уже показан прикрепленным
+        None => return,
     };
-    println!("3");
-    // тут вот код порядочно дублируется
+    // TODO: тут вот код порядочно дублируется
     {
         let transporter_node_id = scene.unit_id_to_node_id(unit_info.unit_id);
         let mut node = scene.node_mut(attached_unit_node_id)
@@ -111,6 +122,20 @@ fn xxx(scene: &mut Scene, unit_info: &UnitInfo) {
     }
 }
 
+fn try_to_fix_attached_units_pos(
+    state: &PartialState,
+    scene: &mut Scene,
+    unit_info: &UnitInfo,
+) {
+    // находим есть ли в этой клетке юнит с буксиром,
+    // смотрим есть ли у буксируемого юнита свой узел в графе
+    // если есть - переносим его детей в узел к транспорту и убиваем узел буксируемого
+    try_to_fix_attached_unit_pos(scene, unit_info);
+    for unit in state.units_at(unit_info.pos.map_pos) {
+        try_to_fix_attached_unit_pos(scene, &core::unit_to_info(unit));
+    }
+}
+
 fn show_unit_at(
     db: &Db,
     state: &PartialState,
@@ -119,8 +144,6 @@ fn show_unit_at(
     mesh_id: MeshId,
     marker_mesh_id: MeshId,
 ) {
-    // TODO: тут нужна проверка что в этой клетке нет буксира или буксируемого.
-    // если таковой находится, то надо все двигать
     let to = geom::exact_pos_to_world_pos(state, unit_info.pos);
     let rot = Rad(thread_rng().gen_range(0.0, PI * 2.0));
     let mut children = get_unit_scene_nodes(db, unit_info, mesh_id);
@@ -140,15 +163,6 @@ fn show_unit_at(
         color: [1.0, 1.0, 1.0, 1.0],
         children: children,
     });
-    {
-        // находим есть ли в этой клетке юнит с буксиром,
-        // смотрим есть ли у буксируемого юнита свой узел в графе
-        // если есть - переносим его детей в узел к транспорту и убиваем узел буксируемого
-        xxx(scene, unit_info);
-        for unit in state.units_at(unit_info.pos.map_pos) {
-            xxx(scene, &core::unit_to_info(unit));
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -391,9 +405,9 @@ impl EventShowUnitVisualizer {
         marker_mesh_id: MeshId,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
-        println!("SHOW UNIT {:?}", unit_info);
         map_text.add_text(unit_info.pos.map_pos, "spotted");
         show_unit_at(db, state, scene, unit_info, mesh_id, marker_mesh_id);
+        try_to_fix_attached_units_pos(state, scene, unit_info);
         Box::new(EventShowUnitVisualizer)
     }
 }
@@ -657,7 +671,6 @@ impl EventSmokeVisualizer {
         smoke_mesh_id: MeshId,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
-        // println!("unit_id: {:?}", unit_id); // TODO
         // TODO: show shell animation
         map_text.add_text(pos, "smoke");
         let z_step = 0.45; // TODO: magic
