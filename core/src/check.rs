@@ -247,9 +247,7 @@ pub fn check_command<S: GameState>(
             Ok(())
         },
         Command::Attach{transporter_id, attached_unit_id, ..} => {
-            // TODO: по хорошему, это не траспортер нифига уже
             // TODO: и пассажир совсем и не пассажир уже
-            // s/attach/drug?
             let transporter = match state.units().get(&transporter_id) {
                 Some(transporter) => transporter,
                 None => return Err(CommandError::BadTransporterId),
@@ -261,11 +259,8 @@ pub fn check_command<S: GameState>(
                 return Err(CommandError::CanNotCommandEnemyUnits);
             }
             let transporter_type = db.unit_type(transporter.type_id);
-            if transporter_type.is_infantry {
+            if transporter_type.is_infantry || transporter_type.is_air {
                 // TODO: пехота не тащит
-                return Err(CommandError::BadTransporterType);
-            }
-            if transporter_type.is_air {
                 // TODO: воздушные юниты не тащат
                 return Err(CommandError::BadTransporterType);
             }
@@ -275,7 +270,6 @@ pub fn check_command<S: GameState>(
             }
             // TODO: проверять цену движения
             // TODO: передвижение с буксиром должно стоить больше
-            // TODO: перевозка полевых орудий?
             let attached_unit = match state.units().get(&attached_unit_id) {
                 Some(attached_unit) => attached_unit,
                 // TODO: BadAttachedUnitId
@@ -295,10 +289,10 @@ pub fn check_command<S: GameState>(
             Ok(())
         },
         Command::Detach{transporter_id, pos} => {
-            if state.units().get(&transporter_id).is_none() {
-                return Err(CommandError::BadTransporterId);
-            }
-            let transporter = state.unit(transporter_id);
+            let transporter = match state.units().get(&transporter_id) {
+                Some(transporter) => transporter,
+                None => return Err(CommandError::BadTransporterId),
+            };
             if !transporter.is_alive {
                 return Err(CommandError::UnitIsDead);
             }
@@ -306,10 +300,9 @@ pub fn check_command<S: GameState>(
                 Some(id) => id,
                 None => return Err(CommandError::TransporterIsEmpty), // TODO: НетПрицепа
             };
-            let _attached_unit = match state.units().get(&attached_unit_id) { // TODO: использовать?
-                Some(attached_unit) => attached_unit,
-                None => return Err(CommandError::BadPassengerId), // TODO: BadAttachedUnitId
-            };
+            if state.units().get(&attached_unit_id).is_none() {
+                return Err(CommandError::BadPassengerId), // TODO: BadAttachedUnitId
+            }
             if transporter.player_id != player_id {
                 return Err(CommandError::CanNotCommandEnemyUnits);
             }
