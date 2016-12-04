@@ -301,7 +301,7 @@ pub fn check_command<S: GameState>(
                 None => return Err(CommandError::TransporterIsEmpty), // TODO: НетПрицепа
             };
             if state.units().get(&attached_unit_id).is_none() {
-                return Err(CommandError::BadPassengerId), // TODO: BadAttachedUnitId
+                return Err(CommandError::BadPassengerId); // TODO: BadAttachedUnitId
             }
             if transporter.player_id != player_id {
                 return Err(CommandError::CanNotCommandEnemyUnits);
