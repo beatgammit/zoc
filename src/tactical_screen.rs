@@ -894,6 +894,7 @@ impl TacticalScreen {
         &mut self,
         event: &CoreEvent,
     ) -> Box<event_visualizer::EventVisualizer> {
+        println!("make_event_visualizer: {:?}", event);
         let current_player_id = self.core.player_id();
         let mut player_info = self.player_info.get_mut(current_player_id);
         let scene = &mut player_info.scene;
@@ -993,7 +994,7 @@ impl TacticalScreen {
                     state,
                     scene,
                     transporter_id,
-                    attached_unit_id,
+                    attached_unit_id.unwrap(),
                     unit_type_visual_info,
                     &mut self.map_text_manager,
                 )

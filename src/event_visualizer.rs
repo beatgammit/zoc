@@ -96,44 +96,27 @@ impl EventVisualizer for EventEndTurnVisualizer {
     fn end(&mut self, _: &mut Scene, _: &PartialState) {}
 }
 
-fn try_to_fix_attached_unit_pos(scene: &mut Scene, unit_info: &UnitInfo) {
-    let attached_unit_id = match unit_info.attached_unit_id {
-        Some(id) => id,
-        None => return,
-    };
+fn try_to_fix_attached_unit_pos(
+    scene: &mut Scene,
+    transporter_id: UnitId,
+    attached_unit_id: UnitId,
+) {
+    let transporter_node_id = scene.unit_id_to_node_id(transporter_id);
     let attached_unit_node_id
         = match scene.unit_id_to_node_id_opt(attached_unit_id)
     {
         Some(id) => id,
-        // этот юнит уже показан прикрепленным
+        // this unit's scene node is already attached to transporter's scene node
         None => return,
     };
-    // TODO: тут вот код порядочно дублируется
-    {
-        let transporter_node_id = scene.unit_id_to_node_id(unit_info.unit_id);
-        let mut node = scene.node_mut(attached_unit_node_id)
-            .children.remove(0);
-        scene.remove_unit(attached_unit_id);
-        node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
-        node.rot += Rad(PI);
-        // TODO: точно он должен быть последним? Скорее надо добавлять в начало
-        scene.node_mut(transporter_node_id).children.push(node);
-        scene.node_mut(transporter_node_id).children[0].pos.v.y = 0.5;
-    }
-}
-
-fn try_to_fix_attached_units_pos(
-    state: &PartialState,
-    scene: &mut Scene,
-    unit_info: &UnitInfo,
-) {
-    // находим есть ли в этой клетке юнит с буксиром,
-    // смотрим есть ли у буксируемого юнита свой узел в графе
-    // если есть - переносим его детей в узел к транспорту и убиваем узел буксируемого
-    try_to_fix_attached_unit_pos(scene, unit_info);
-    for unit in state.units_at(unit_info.pos.map_pos) {
-        try_to_fix_attached_unit_pos(scene, &core::unit_to_info(unit));
-    }
+    let mut node = scene.node_mut(attached_unit_node_id)
+        .children.remove(0);
+    scene.remove_unit(attached_unit_id);
+    node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
+    node.rot += Rad(PI);
+    // TODO: точно он должен быть последним? Скорее надо добавлять в начало
+    scene.node_mut(transporter_node_id).children.push(node);
+    scene.node_mut(transporter_node_id).children[0].pos.v.y = 0.5;
 }
 
 fn show_unit_at(
@@ -407,7 +390,16 @@ impl EventShowUnitVisualizer {
     ) -> Box<EventVisualizer> {
         map_text.add_text(unit_info.pos.map_pos, "spotted");
         show_unit_at(db, state, scene, unit_info, mesh_id, marker_mesh_id);
-        try_to_fix_attached_units_pos(state, scene, unit_info);
+        if let Some(attached_unit_id) = unit_info.attached_unit_id {
+            try_to_fix_attached_unit_pos(
+                scene, unit_info.unit_id, attached_unit_id);
+        }
+        for unit in state.units_at(unit_info.pos.map_pos) {
+            if let Some(attached_unit_id) = unit.attached_unit_id {
+                try_to_fix_attached_unit_pos(
+                    scene, unit.id, attached_unit_id);
+            }
+        }
         Box::new(EventShowUnitVisualizer)
     }
 }
@@ -788,7 +780,7 @@ impl EventVisualizer for EventRemoveSmokeVisualizer {
 
 pub struct EventAttachVisualizer {
     transporter_id: UnitId,
-    attached_unit_id: Option<UnitId>,
+    attached_unit_id: UnitId,
     move_helper: MoveHelper,
 }
 
@@ -797,12 +789,12 @@ impl EventAttachVisualizer {
         state: &PartialState,
         scene: &mut Scene,
         transporter_id: UnitId,
-        attached_unit_id: Option<UnitId>,
+        attached_unit_id: UnitId,
         unit_type_visual_info: &UnitTypeVisualInfo,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
         let transporter = state.unit(transporter_id);
-        let attached_unit = state.unit(attached_unit_id.unwrap()); // TODO: убери анврап
+        let attached_unit = state.unit(attached_unit_id);
         map_text.add_text(transporter.pos.map_pos, "attached");
         let from = geom::exact_pos_to_world_pos(state, transporter.pos);
         let to = geom::exact_pos_to_world_pos(state, attached_unit.pos);
@@ -830,24 +822,13 @@ impl EventVisualizer for EventAttachVisualizer {
     }
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
-        let transporter_node_id = scene.unit_id_to_node_id(self.transporter_id);
-        if let Some(attached_unit_id) = self.attached_unit_id {
-            let attached_unit_node_id = scene.unit_id_to_node_id(attached_unit_id);
-            let mut node = scene.node_mut(attached_unit_node_id)
-                .children.remove(0);
-            scene.remove_unit(attached_unit_id);
-            node.pos.v.y = -0.5; // TODO: смотреть в UnitTypeVisualInfo
-            node.rot += Rad(PI);
-            // TODO: точно он должен быть последним? Скорее надо добавлять в начало
-            scene.node_mut(transporter_node_id).children.push(node);
-        }
-        scene.node_mut(transporter_node_id).children[0].pos.v.y = 0.5;
+        try_to_fix_attached_unit_pos(
+            scene, self.transporter_id, self.attached_unit_id);
     }
 }
 
 pub struct EventDetachVisualizer {
     transporter_id: UnitId,
-    // attached_unit_id: UnitId, // TODO: оно мне вообще нужно еще?
     move_helper: MoveHelper,
 }
 
