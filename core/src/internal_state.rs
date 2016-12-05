@@ -241,6 +241,11 @@ impl GameStateMut for InternalState {
                         assert!(self.units.get(&attack_info.defender_id).is_some());
                         self.units.remove(&attack_info.defender_id);
                     }
+                    if let Some(passenger_id)
+                        = self.unit(attack_info.defender_id).passenger_id
+                    {
+                        self.units.remove(&passenger_id).unwrap();
+                    }
                 }
                 let attacker_id = match attack_info.attacker_id {
                     Some(attacker_id) => attacker_id,

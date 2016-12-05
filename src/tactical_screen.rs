@@ -894,7 +894,7 @@ impl TacticalScreen {
         &mut self,
         event: &CoreEvent,
     ) -> Box<event_visualizer::EventVisualizer> {
-        println!("make_event_visualizer: {:?}", event);
+        println!("make_event_visualizer: {:?}", event); // TODO: удали меня
         let current_player_id = self.core.player_id();
         let mut player_info = self.player_info.get_mut(current_player_id);
         let scene = &mut player_info.scene;
@@ -1016,6 +1016,7 @@ impl TacticalScreen {
                     transporter_id,
                     to,
 
+                    // TODO: что-то из этого явно лишнее
                     attached_unit_visual_info,
                     attached_unit_mesh_id,
                     self.mesh_ids.marker_mesh_id,

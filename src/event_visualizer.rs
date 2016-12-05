@@ -352,6 +352,10 @@ impl EventVisualizer for EventAttackUnitVisualizer {
     }
 
     fn end(&mut self, scene: &mut Scene, _: &PartialState) {
+        // TODO: если был прицеп, то превратить именно его в полноценный юнит.
+        //
+        // проверить, что бы цена движения по клетке из-за двух отрядов в слотеr
+        // была довольно большой.
         if self.attack_info.killed > 0 {
             let children = &mut scene.node_mut(self.defender_node_id).children;
             assert!(self.attack_info.killed as usize <= children.len());
@@ -844,7 +848,7 @@ impl EventDetachVisualizer {
         mesh_id: MeshId,
         marker_mesh_id: MeshId,
 
-        transporter_visual_info: &UnitTypeVisualInfo, // TODO: добавить в имя транспортер
+        transporter_visual_info: &UnitTypeVisualInfo,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
         let transporter = state.unit(transporter_id);
@@ -863,7 +867,6 @@ impl EventDetachVisualizer {
         let move_speed = transporter_visual_info.move_speed;
         Box::new(EventDetachVisualizer {
             transporter_id: transporter_id,
-            // attached_unit_id: attached_unit_id,
             move_helper: MoveHelper::new(from, to, move_speed),
         })
     }
