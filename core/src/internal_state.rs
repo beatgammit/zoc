@@ -232,6 +232,7 @@ impl GameStateMut for InternalState {
                     count = unit.count;
                 }
                 if count <= 0 {
+                    // TODO: что делать будем с прицепом?
                     if attack_info.leave_wrecks {
                         // TODO: kill\unload passengers
                         let unit = self.units.get_mut(&attack_info.defender_id).unwrap();
