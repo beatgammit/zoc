@@ -21,9 +21,10 @@ use mesh::{MeshId};
 use geom::{self, vec3_z};
 use gen;
 use scene::{Scene, SceneNode, NodeId};
-use unit_type_visual_info::{UnitTypeVisualInfo};
+use unit_type_visual_info::{UnitTypeVisualInfo, UnitTypeVisualInfoManager};
 use move_helper::{MoveHelper};
 use map_text::{MapTextManager};
+use mesh_manager::{MeshIdManager};
 
 static WRECKS_COLOR: [f32; 4] = [0.3, 0.3, 0.3, 1.0];
 
@@ -234,14 +235,17 @@ pub struct EventAttackUnitVisualizer {
     shell_move: Option<MoveHelper>,
     shell_node_id: Option<NodeId>,
     attack_info: AttackInfo,
+    attached_unit_id: Option<UnitId>,
 }
 
 impl EventAttackUnitVisualizer {
     pub fn new(
+        db: &Db,
         state: &PartialState,
         scene: &mut Scene,
         attack_info: &AttackInfo,
-        shell_mesh_id: MeshId,
+        mesh_ids: &MeshIdManager,
+        unit_type_visual_info: &UnitTypeVisualInfoManager,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
         let attack_info = attack_info.clone();
@@ -264,7 +268,7 @@ impl EventAttackUnitVisualizer {
             shell_node_id = Some(scene.add_node(SceneNode {
                 pos: from,
                 rot: geom::get_rot_angle(attacker_pos, defender_pos),
-                mesh_id: Some(shell_mesh_id),
+                mesh_id: Some(mesh_ids.shell_mesh_id),
                 color: [1.0, 1.0, 1.0, 1.0],
                 children: Vec::new(),
             }));
@@ -286,7 +290,22 @@ impl EventAttackUnitVisualizer {
         }
         let is_target_suppressed = defender.morale < 50
             && defender.morale + attack_info.suppression >= 50;
-        if !is_target_destroyed {
+        if is_target_destroyed {
+            if let Some(attached_unit_id) = defender.attached_unit_id {
+                let attached_unit = state.unit(attached_unit_id);
+                let attached_unit_info = core::unit_to_info(&attached_unit);
+                let mesh_id = unit_type_visual_info
+                    .get(attached_unit.type_id).mesh_id;
+                show_unit_at(
+                    db,
+                    state,
+                    scene,
+                    &attached_unit_info,
+                    mesh_id,
+                    mesh_ids.marker_mesh_id,
+                );
+            }
+        } else {
             map_text.add_text(
                 defender.pos.map_pos,
                 &format!("morale: -{}", attack_info.suppression),
@@ -302,6 +321,7 @@ impl EventAttackUnitVisualizer {
             move_helper: move_helper,
             shell_move: shell_move,
             shell_node_id: shell_node_id,
+            attached_unit_id: defender.attached_unit_id,
         })
     }
 }
@@ -369,6 +389,11 @@ impl EventVisualizer for EventAttackUnitVisualizer {
             }
         }
         if self.is_target_destroyed {
+            if self.attached_unit_id.is_some() {
+                // господи, какой же быдлокод
+                // удаляем узел с прицепленным отрядом
+                scene.node_mut(self.defender_node_id).children.pop().unwrap();
+            }
             // delete unit's marker
             scene.node_mut(self.defender_node_id).children.pop().unwrap();
             if !self.attack_info.leave_wrecks {
