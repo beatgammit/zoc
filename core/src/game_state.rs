@@ -64,18 +64,28 @@ impl<'a> Iterator for UnitsAtIter<'a> {
 
 pub trait GameState {
     fn map(&self) -> &Map<Terrain>;
-    fn units(&self) -> &HashMap<UnitId, Unit>;
+
+    fn units(&self) -> hash_map::Iter<UnitId, Unit>;
+
+    /*
+    fn units2(&self) -> hash_map::Iter<UnitId, Unit> {
+        self.units().iter()
+    }
+    */
+
+    fn unit_opt(&self, id: UnitId) -> Option<&Unit>;
+
     fn objects(&self) -> &HashMap<ObjectId, Object>;
     fn sectors(&self) -> &HashMap<SectorId, Sector>;
     fn score(&self) -> &HashMap<PlayerId, Score>;
     fn reinforcement_points(&self) -> &HashMap<PlayerId, ReinforcementPoints>;
 
     fn unit(&self, id: UnitId) -> &Unit {
-        &self.units()[&id]
+        self.unit_opt(id).unwrap()
     }
 
     fn units_at(&self, pos: MapPos) -> UnitsAtIter {
-        UnitsAtIter{it: self.units().iter(), pos: pos}
+        UnitsAtIter{it: self.units(), pos: pos}
     }
 
     fn objects_at(&self, pos: MapPos) -> ObjectsAtIter {

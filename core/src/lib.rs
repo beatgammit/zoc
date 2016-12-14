@@ -7,6 +7,7 @@ pub mod db;
 pub mod unit;
 pub mod dir;
 pub mod partial_state;
+pub mod tmp_partial_state;
 pub mod game_state;
 pub mod pathfinder;
 pub mod misc;
@@ -369,7 +370,7 @@ pub fn find_next_player_unit_id<S: GameState>(
     player_id: PlayerId,
     unit_id: UnitId,
 ) -> UnitId {
-    let mut i = state.units().iter().cycle().filter(
+    let mut i = state.units().cycle().filter(
         |&(_, unit)| unit.is_alive && unit.player_id == player_id);
     while let Some((&id, _)) = i.next() {
         if id == unit_id {
@@ -386,7 +387,7 @@ pub fn find_prev_player_unit_id<S: GameState>(
     player_id: PlayerId,
     unit_id: UnitId,
 ) -> UnitId {
-    let mut i = state.units().iter().cycle().filter(
+    let mut i = state.units().cycle().filter(
         |&(_, unit)| unit.is_alive && unit.player_id == player_id).peekable();
     while let Some((&id, _)) = i.next() {
         let &(&next_id, _) = i.peek().unwrap();
@@ -540,6 +541,7 @@ pub struct Core {
     db: Db,
     ai: Ai,
     players_info: HashMap<PlayerId, PlayerInfo>,
+    next_unit_id: UnitId,
 }
 
 fn get_players_list(options: &Options) -> Vec<Player> {
@@ -760,6 +762,7 @@ impl Core {
             db: Db::new(),
             ai: Ai::new(options, PlayerId{id:1}),
             players_info: get_player_info_lists(map_size),
+            next_unit_id: UnitId{id: 0},
         }
     }
 
@@ -768,15 +771,12 @@ impl Core {
     }
 
     fn get_new_unit_id(&mut self) -> UnitId {
-        let mut next_id = match self.state.units().keys().max() {
-            Some(&id) => id,
-            None => UnitId{id: 0},
-        };
-        next_id.id += 1;
-        next_id
+        self.next_unit_id.id += 1;
+        self.next_unit_id
     }
 
     fn get_new_object_id(&mut self) -> ObjectId {
+        // TODO: self.next_object_id.id += 1;
         let mut next_id = match self.state.objects().keys().max() {
             Some(&id) => id,
             None => ObjectId{id: 0},
@@ -892,7 +892,10 @@ impl Core {
     }
 
     fn reaction_fire_internal(&mut self, unit_id: UnitId, stop_on_attack: bool) -> ReactionFireResult {
-        let unit_ids: Vec<_> = self.state.units().keys().cloned().collect();
+        let mut unit_ids = Vec::new();
+        for (&id, _) in self.state.units() {
+            unit_ids.push(id);
+        }
         let mut result = ReactionFireResult::None;
         for enemy_unit_id in unit_ids {
             if is_unit_passenger_or_attached(&self.db, &self.state, enemy_unit_id) {
@@ -922,7 +925,7 @@ impl Core {
             };
             self.do_core_event(&event);
             result = ReactionFireResult::Attacked;
-            if self.state.units().get(&unit_id).is_none() {
+            if self.state.unit_opt(unit_id).is_none() {
                 return ReactionFireResult::Killed;
             }
         }
@@ -1188,7 +1191,8 @@ impl Core {
                     player.id,
                 );
                 let show_hide_events = filter::show_or_hide_passive_enemies(
-                    self.state.units(),
+                    // self.state.units(),
+                    &self.state,
                     &active_unit_ids,
                     &i.visible_enemies,
                     &new_visible_enemies,

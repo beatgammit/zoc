@@ -125,7 +125,7 @@ impl Fow {
         unit: &Unit,
         pos: ExactPos,
     ) -> bool {
-        for other_unit in state.units().values() {
+        for (_, other_unit) in state.units() {
             if let Some(passenger_id) = other_unit.passenger_id {
                 if passenger_id == unit.id && other_unit.pos == pos {
                     return false;
@@ -134,7 +134,7 @@ impl Fow {
         }
         let unit_type = db.unit_type(unit.type_id);
         if unit_type.is_air {
-            for enemy_unit in state.units().values() {
+            for (_, enemy_unit) in state.units() {
                 if enemy_unit.player_id == unit.player_id {
                     continue;
                 }
@@ -156,7 +156,7 @@ impl Fow {
 
     fn reset(&mut self, db: &Db, state: &InternalState) {
         self.clear();
-        for unit in state.units().values() {
+        for (_, unit) in state.units() {
             if unit.player_id == self.player_id && unit.is_alive {
                 fov_unit(db, state, &mut self.map, unit);
             }

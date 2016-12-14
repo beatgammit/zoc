@@ -1,4 +1,5 @@
 use std::collections::{HashMap};
+use std::collections::hash_map;
 use cgmath::{Vector2};
 use types::{Size2};
 use unit::{Unit};
@@ -151,8 +152,12 @@ impl InternalState {
 }
 
 impl GameState for InternalState {
-    fn units(&self) -> &HashMap<UnitId, Unit> {
-        &self.units
+    fn units(&self) -> hash_map::Iter<UnitId, Unit> {
+        self.units.iter()
+    }
+
+    fn unit_opt(&self, id: UnitId) -> Option<&Unit> {
+        self.units.get(&id)
     }
 
     fn objects(&self) -> &HashMap<ObjectId, Object> {
