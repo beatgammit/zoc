@@ -45,7 +45,6 @@ impl<'a> GameState for TmpPartialState<'a> {
     }
 
     fn units(&self) -> hash_map::Iter<UnitId, Unit> {
-        // self.state.units().filter(|x| true)
         self.state.units()
     }
 

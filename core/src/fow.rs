@@ -127,7 +127,7 @@ impl Fow {
         pos: ExactPos,
     ) -> bool {
         // TODO is_transporter_or_attached
-        for (_, other_unit) in state.units() {
+        for (_, other_unit) in state.units() { // TODO: опасность рекурсии
             if let Some(passenger_id) = other_unit.passenger_id {
                 if passenger_id == unit.id && other_unit.pos == pos {
                     return false;
@@ -141,7 +141,7 @@ impl Fow {
             // просто если увести наблюдателя.
             //
             // лучше запилить второй слой в тумане войны
-            for (_, enemy_unit) in state.units() {
+            for (_, enemy_unit) in state.units() { // TODO: опасноcnm рекурсии и вообще надо переделать
                 if enemy_unit.player_id == unit.player_id {
                     continue;
                 }
@@ -163,7 +163,7 @@ impl Fow {
 
     fn reset<S: GameState>(&mut self, state: &S) {
         self.clear();
-        for (_, unit) in state.units() {
+        for (_, unit) in state.units2() {
             if unit.player_id == self.player_id && unit.is_alive {
                 fov_unit(&self.db, state, &mut self.map, unit);
             }

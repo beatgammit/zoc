@@ -377,7 +377,7 @@ pub fn find_next_player_unit_id<S: GameState>(
     player_id: PlayerId,
     unit_id: UnitId,
 ) -> UnitId {
-    let mut i = state.units().cycle().filter(
+    let mut i = state.units2().cycle().filter(
         |&(_, unit)| unit.is_alive && unit.player_id == player_id);
     while let Some((&id, _)) = i.next() {
         if id == unit_id {
@@ -394,7 +394,7 @@ pub fn find_prev_player_unit_id<S: GameState>(
     player_id: PlayerId,
     unit_id: UnitId,
 ) -> UnitId {
-    let mut i = state.units().cycle().filter(
+    let mut i = state.units2().cycle().filter(
         |&(_, unit)| unit.is_alive && unit.player_id == player_id).peekable();
     while let Some((&id, _)) = i.next() {
         let &(&next_id, _) = i.peek().unwrap();
@@ -902,7 +902,7 @@ impl Core {
 
     fn reaction_fire_internal(&mut self, unit_id: UnitId, stop_on_attack: bool) -> ReactionFireResult {
         let mut unit_ids = Vec::new();
-        for (&id, _) in self.state.units() {
+        for (&id, _) in self.state.units2() {
             unit_ids.push(id);
         }
         let mut result = ReactionFireResult::None;
@@ -1214,7 +1214,6 @@ impl Core {
                     player.id,
                 );
                 let show_hide_events = filter::show_or_hide_passive_enemies(
-                    // self.state.units(),
                     &self.state,
                     &active_unit_ids,
                     &i.visible_enemies,
