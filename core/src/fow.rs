@@ -6,7 +6,7 @@ use map::{Map, Terrain, distance};
 use fov::{fov, simple_fov};
 use db::{Db};
 use unit::{Unit, UnitType};
-use ::{CoreEvent, PlayerId, MapPos, ExactPos, ObjectClass};
+use ::{CoreEvent, PlayerId, MapPos, ExactPos, ObjectClass, is_passenger_or_attached};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub enum TileVisibility {
@@ -91,6 +91,7 @@ fn calc_visibility<S: GameState>(
 #[derive(Clone, Debug)]
 pub struct Fow {
     map: Map<TileVisibility>,
+    air_map: Map<TileVisibility>, // TODO: придумай чего-то для вертолетов
     player_id: PlayerId,
     db: Rc<Db>,
 }
@@ -99,6 +100,7 @@ impl Fow {
     pub fn new(db: Rc<Db>, map_size: Size2, player_id: PlayerId) -> Fow {
         Fow {
             map: Map::new(map_size),
+            air_map: Map::new(map_size),
             player_id: player_id,
             db: db,
         }
@@ -120,28 +122,23 @@ impl Fow {
         }
     }
 
-    pub fn is_visible<S: GameState>(
-        &self,
-        state: &S,
-        unit: &Unit,
-        pos: ExactPos,
-    ) -> bool {
-        // TODO is_transporter_or_attached
-        for (_, other_unit) in state.units() { // TODO: опасность рекурсии
-            if let Some(passenger_id) = other_unit.passenger_id {
-                if passenger_id == unit.id && other_unit.pos == pos {
-                    return false;
-                }
-            }
+    pub fn is_visible(&self, unit: &Unit, pos: ExactPos) -> bool {
+        if is_passenger_or_attached(unit) {
+            return false;
         }
         let unit_type = self.db.unit_type(unit.type_id);
+        /*
+        // TODO: вот это все заменить на второй слой в Fow
         if unit_type.is_air {
             // TODO: туповатая проверка
             // так воздушный юнит может пропасть из видимости
             // просто если увести наблюдателя.
             //
             // лучше запилить второй слой в тумане войны
-            for (_, enemy_unit) in state.units() { // TODO: опасноcnm рекурсии и вообще надо переделать
+            //
+            // TODO: опасноcnm рекурсии и вообще надо переделать
+            //
+            for (_, enemy_unit) in state.units() {
                 if enemy_unit.player_id == unit.player_id {
                     continue;
                 }
@@ -152,12 +149,14 @@ impl Fow {
                 }
             }
         }
+        */
         self.check_terrain_visibility(unit_type, pos.map_pos)
     }
 
     fn clear(&mut self) {
         for pos in self.map.get_iter() {
             *self.map.tile_mut(pos) = TileVisibility::No;
+            *self.air_map.tile_mut(pos) = TileVisibility::No;
         }
     }
 
@@ -235,32 +234,18 @@ pub fn fake_fow() -> &'static FakeFow {
 }
 
 pub trait FogOfWar: Clone {
-    fn is_visible<S: GameState>(
-        &self,
-        state: &S,
-        unit: &Unit,
-        pos: ExactPos,
-    ) -> bool;
+    fn is_visible(&self, unit: &Unit, pos: ExactPos) -> bool;
 }
 
 impl FogOfWar for FakeFow {
-    fn is_visible<S: GameState>(
-        &self,
-        _: &S,
-        _: &Unit,
-        _: ExactPos,
-    ) -> bool {
+    fn is_visible(&self, _: &Unit, _: ExactPos) -> bool {
         true
     }
 }
 
 impl FogOfWar for Fow {
-    fn is_visible<S: GameState>(
-        &self,
-        state: &S,
-        unit: &Unit,
-        pos: ExactPos,
-    ) -> bool {
-        self.is_visible(state, unit, pos)
+    fn is_visible(&self, unit: &Unit, pos: ExactPos) -> bool {
+        // self.is_visible(state, unit, pos)
+        self.is_visible(unit, pos)
     }
 }

@@ -51,15 +51,13 @@ impl GameState for PartialState {
         self.state.units()
     }
 
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self> {
+    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
         UnitIter {
             iter: self.state.units(), // что делать, когда этот метод будет убран?
 
             // TODO: поясни нафиг тут поддельный Fow используется,
             // а то странно
             fow: fake_fow(),
-
-            state: self,
         }
     }
 

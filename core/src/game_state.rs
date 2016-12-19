@@ -44,12 +44,12 @@ impl<'a> Iterator for ObjectsAtIter<'a> {
 }
 
 #[derive(Clone)]
-pub struct UnitsAtIter<'a, Fow: FogOfWar + 'a, S: GameState + 'a> {
-    it: UnitIter<'a, Fow, S>,
+pub struct UnitsAtIter<'a, Fow: FogOfWar + 'a> {
+    it: UnitIter<'a, Fow>,
     pos: MapPos,
 }
 
-impl<'a, Fow: FogOfWar + 'a, S: GameState + 'a> Iterator for UnitsAtIter<'a, Fow, S> {
+impl<'a, Fow: FogOfWar + 'a> Iterator for UnitsAtIter<'a, Fow> {
     type Item = &'a Unit;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -69,7 +69,7 @@ pub trait GameState: Sized + Clone {
 
     fn units(&self) -> hash_map::Iter<UnitId, Unit>;
 
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self>;
+    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow>;
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit>;
 
@@ -82,7 +82,7 @@ pub trait GameState: Sized + Clone {
         self.unit_opt(id).unwrap()
     }
 
-    fn units_at(&self, pos: MapPos) -> UnitsAtIter<Self::Fow, Self> {
+    fn units_at(&self, pos: MapPos) -> UnitsAtIter<Self::Fow> {
         UnitsAtIter{it: self.units2(), pos: pos}
     }
 
@@ -109,19 +109,18 @@ pub trait GameStateMut: GameState {
 }
 
 #[derive(Clone)]
-pub struct UnitIter<'a, Fow: FogOfWar + 'a, S: GameState + 'a> {
+pub struct UnitIter<'a, Fow: FogOfWar + 'a> {
     pub iter: hash_map::Iter<'a, UnitId, Unit>,
     pub fow: &'a Fow,
-    pub state: &'a S,
 }
 
-impl<'a, S: GameState, Fow: FogOfWar> Iterator for UnitIter<'a, Fow, S> {
+impl<'a, Fow: FogOfWar> Iterator for UnitIter<'a, Fow> {
     type Item = (&'a UnitId, &'a Unit);
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(pair) = self.iter.next() {
             let (_, unit) = pair;
-            if self.fow.is_visible(self.state, unit, unit.pos) {
+            if self.fow.is_visible(unit, unit.pos) {
                 println!("Noooo?");
                 return Some(pair);
             } else {

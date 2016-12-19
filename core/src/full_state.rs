@@ -39,11 +39,10 @@ impl GameState for FullState {
         self.state.units()
     }
 
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self> {
+    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
         UnitIter {
             iter: self.state.units(), // что делать, когда этот метод будет убран?
             fow: fake_fow(),
-            state: self,
         }
     }
 

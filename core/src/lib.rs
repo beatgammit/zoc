@@ -30,7 +30,6 @@ use types::{Size2};
 use misc::{clamp};
 use full_state::{FullState};
 use game_state::{GameState, GameStateMut, ObjectsAtIter};
-use partial_state::{PartialState};
 use tmp_partial_state::{TmpPartialState};
 use map::{Map, Terrain};
 use pathfinder::{tile_cost};
@@ -263,6 +262,8 @@ pub struct UnitInfo {
     pub player_id: PlayerId,
     pub passenger_id: Option<UnitId>,
     pub attached_unit_id: Option<UnitId>,
+    pub is_loaded: bool,
+    pub is_attached: bool,
     pub is_alive: bool,
 }
 
@@ -405,33 +406,14 @@ pub fn find_prev_player_unit_id<S: GameState>(
     unreachable!()
 }
 
-pub fn is_unit_passenger_or_attached<S: GameState>(
-    db: &Db,
-    state: &S,
-    unit_id: UnitId,
-) -> bool {
-    let unit = state.unit(unit_id);
-    for transporter in state.units_at(unit.pos.map_pos)
-        .filter(|unit| db.unit_type(unit.type_id).is_transporter)
-    {
-        if let Some(passenger_id) = transporter.passenger_id {
-            if passenger_id == unit_id {
-                return true;
-            }
-        }
-        if let Some(attached_unit_id) = transporter.attached_unit_id {
-            if attached_unit_id == unit_id {
-                return true;
-            }
-        }
-    }
-    false
+pub fn is_passenger_or_attached(unit: &Unit) -> bool {
+    unit.is_loaded || unit.is_attached
 }
 
-pub fn get_unit_ids_at(db: &Db, state: &PartialState, pos: MapPos) -> Vec<UnitId> {
+pub fn get_unit_ids_at<S: GameState>(state: &S, pos: MapPos) -> Vec<UnitId> {
     let mut ids = Vec::new();
     for unit in state.units_at(pos) {
-        if !is_unit_passenger_or_attached(db, state, unit.id) {
+        if !is_passenger_or_attached(unit) {
             ids.push(unit.id)
         }
     }
@@ -447,6 +429,8 @@ pub fn unit_to_info(unit: &Unit) -> UnitInfo {
         passenger_id: unit.passenger_id,
         attached_unit_id: unit.attached_unit_id,
         is_alive: unit.is_alive,
+        is_loaded: unit.is_loaded,
+        is_attached: unit.is_attached,
     }
 }
 
@@ -853,7 +837,7 @@ impl Core {
         let killed = cmp::min(
             defender.count, self.get_killed_count(attacker, defender));
         let fow = &self.players_info[&defender.player_id].fow;
-        let is_visible = fow.is_visible(&self.state, attacker, attacker.pos);
+        let is_visible = fow.is_visible(attacker, attacker.pos);
         let ambush_chance = 70;
         let is_ambush = !is_visible
             && thread_rng().gen_range(1, 100) <= ambush_chance;
@@ -887,7 +871,7 @@ impl Core {
         }
         // TODO: move to `check_attack`
         let fow = &self.players_info[&attacker.player_id].fow;
-        if !fow.is_visible(&self.state, defender, defender.pos) {
+        if !fow.is_visible(defender, defender.pos) {
             return false;
         }
         let check_attack_result = check_attack(
@@ -907,7 +891,7 @@ impl Core {
         }
         let mut result = ReactionFireResult::None;
         for enemy_unit_id in unit_ids {
-            if is_unit_passenger_or_attached(&self.db, &self.state, enemy_unit_id) {
+            if is_passenger_or_attached(self.state.unit(enemy_unit_id)) {
                 continue;
             }
             let event = {
@@ -1013,6 +997,8 @@ impl Core {
                         passenger_id: None,
                         attached_unit_id: None,
                         is_alive: true,
+                        is_loaded: false,
+                        is_attached: false,
                     },
                 };
                 self.do_core_event(&event);

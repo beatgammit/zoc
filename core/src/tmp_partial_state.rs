@@ -36,11 +36,10 @@ impl<'a> TmpPartialState<'a> {
 impl<'a> GameState for TmpPartialState<'a> {
     type Fow = Fow;
 
-    fn units2<'b>(&'b self) -> UnitIter<'b, Self::Fow, Self> {
+    fn units2<'b>(&'b self) -> UnitIter<'b, Self::Fow> {
         UnitIter {
             iter: self.state.units(), // что делать, когда этот метод будет убран?
             fow: self.fow,
-            state: self,
         }
     }
 

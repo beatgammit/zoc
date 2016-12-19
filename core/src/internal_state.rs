@@ -151,6 +151,8 @@ impl InternalState {
                 None
             },
             attached_unit_id: unit_info.attached_unit_id,
+            is_loaded: unit_info.is_loaded,
+            is_attached: unit_info.is_attached,
         });
     }
 }
@@ -158,11 +160,10 @@ impl InternalState {
 impl GameState for InternalState {
     type Fow = FakeFow;
 
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self> {
+    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
         UnitIter {
             iter: self.units.iter(),
             fow: fake_fow(),
-            state: self,
         }
     }
 
@@ -316,6 +317,7 @@ impl GameStateMut for InternalState {
                 let passenger = self.units.get_mut(&passenger_id)
                     .expect("Bad passenger_id");
                 passenger.pos = to;
+                passenger.is_loaded = true;
                 if let Some(ref mut move_points) = passenger.move_points {
                     move_points.n = 0;
                 }
@@ -328,6 +330,7 @@ impl GameStateMut for InternalState {
                 }
                 if let Some(unit) = self.units.get_mut(&unit_info.unit_id) {
                     unit.pos = unit_info.pos;
+                    unit.is_loaded = false;
                     return;
                 }
                 self.add_unit(unit_info, InfoLevel::Partial);
@@ -336,6 +339,7 @@ impl GameStateMut for InternalState {
                 if let Some(passenger_id) = self.unit(transporter_id).passenger_id {
                     let passenger = self.units.get_mut(&passenger_id).unwrap();
                     passenger.pos = to;
+                    passenger.is_attached = true;
                 }
                 let transporter = self.units.get_mut(&transporter_id).unwrap();
                 transporter.pos = to;
@@ -348,6 +352,7 @@ impl GameStateMut for InternalState {
                 if let Some(passenger_id) = self.unit(transporter_id).passenger_id {
                     let passenger = self.units.get_mut(&passenger_id).unwrap();
                     passenger.pos = to;
+                    passenger.is_attached = false;
                 }
                 if let Some(attached_unit_id) = self.unit(transporter_id).attached_unit_id {
                     let attached_unit = self.units.get_mut(&attached_unit_id).unwrap();

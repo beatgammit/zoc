@@ -21,7 +21,7 @@ pub fn get_visible_enemies(
     let mut visible_enemies = HashSet::new();
     for (&id, unit) in state.units2() {
         if unit.player_id != player_id
-            && fow.is_visible(state, unit, unit.pos)
+            && fow.is_visible(unit, unit.pos)
         {
             visible_enemies.insert(id);
         }
@@ -72,8 +72,8 @@ pub fn filter_events(
             if unit.player_id == player_id {
                 events.push(event.clone());
             } else {
-                let prev_vis = fow.is_visible(state, unit, from);
-                let next_vis = fow.is_visible(state, unit, to);
+                let prev_vis = fow.is_visible(unit, from);
+                let next_vis = fow.is_visible(unit, to);
                 if !prev_vis && next_vis {
                     events.push(CoreEvent::ShowUnit {
                         unit_info: UnitInfo {
@@ -106,7 +106,7 @@ pub fn filter_events(
         CoreEvent::CreateUnit{ref unit_info} => {
             let unit = state.unit(unit_info.unit_id);
             if player_id == unit_info.player_id
-                || fow.is_visible(state, unit, unit_info.pos)
+                || fow.is_visible(unit, unit_info.pos)
             {
                 events.push(event.clone());
                 active_unit_ids.insert(unit_info.unit_id);
@@ -119,7 +119,7 @@ pub fn filter_events(
             if player_id != attacker.player_id && !attack_info.is_ambush {
                 // show attacker if this is not ambush
                 let attacker = state.unit(attacker_id);
-                if !fow.is_visible(state, attacker, attacker.pos) {
+                if !fow.is_visible(attacker, attacker.pos) {
                     events.push(CoreEvent::ShowUnit {
                         unit_info: unit_to_info(attacker),
                     });
@@ -152,13 +152,13 @@ pub fn filter_events(
             let passenger = state.unit(passenger_id);
             let transporter = state.unit(transporter_id.unwrap());
             let is_transporter_vis = fow.is_visible(
-                state, transporter, transporter.pos);
+                transporter, transporter.pos);
             let is_passenger_vis = fow.is_visible(
-                state, passenger, from);
+                passenger, from);
             if passenger.player_id == player_id {
                 events.push(event.clone());
             } else if is_passenger_vis || is_transporter_vis {
-                if !fow.is_visible(state, passenger, from) {
+                if !fow.is_visible(passenger, from) {
                     events.push(CoreEvent::ShowUnit {
                         unit_info: UnitInfo {
                             pos: from,
@@ -184,10 +184,8 @@ pub fn filter_events(
             active_unit_ids.insert(unit_info.unit_id);
             let passenger = state.unit(unit_info.unit_id);
             let transporter = state.unit(transporter_id.unwrap());
-            let is_transporter_vis = fow.is_visible(
-                state, transporter, from);
-            let is_passenger_vis = fow.is_visible(
-                state, passenger, to);
+            let is_transporter_vis = fow.is_visible(transporter, from);
+            let is_passenger_vis = fow.is_visible(passenger, to);
             if passenger.player_id == player_id {
                 events.push(event.clone());
             } else if is_passenger_vis || is_transporter_vis {
@@ -217,9 +215,9 @@ pub fn filter_events(
                 active_unit_ids.insert(transporter_id);
                 let attached_unit = state.unit(attached_unit_id);
                 let is_attached_unit_vis = fow.is_visible(
-                    state, attached_unit, to);
+                    attached_unit, to);
                 let is_transporter_vis = fow.is_visible(
-                    state, transporter, from);
+                    transporter, from);
                 if is_attached_unit_vis {
                     if !is_transporter_vis {
                         events.push(CoreEvent::ShowUnit {
@@ -253,8 +251,8 @@ pub fn filter_events(
                 events.push(event.clone())
             } else {
                 active_unit_ids.insert(transporter_id);
-                let is_from_vis = fow.is_visible(state, transporter, from);
-                let is_to_vis = fow.is_visible(state, transporter, to);
+                let is_from_vis = fow.is_visible(transporter, from);
+                let is_to_vis = fow.is_visible(transporter, to);
                 if is_from_vis {
                     events.push(event.clone());
                     if !is_to_vis {
@@ -291,7 +289,7 @@ pub fn filter_events(
         CoreEvent::Smoke{id, pos, unit_id} => {
             let unit_id = unit_id.expect("Core must know about everything");
             let unit = state.unit(unit_id);
-            if fow.is_visible(state, unit, unit.pos) {
+            if fow.is_visible(unit, unit.pos) {
                 events.push(event.clone());
             } else {
                 events.push(CoreEvent::Smoke {

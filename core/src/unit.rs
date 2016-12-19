@@ -25,6 +25,8 @@ pub struct Unit {
     pub count: i32,
     pub morale: i32,
     pub passenger_id: Option<UnitId>,
+    pub is_loaded: bool,
+    pub is_attached: bool,
     pub attached_unit_id: Option<UnitId>,
     pub is_alive: bool,
 }
