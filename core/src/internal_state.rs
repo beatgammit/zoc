@@ -298,7 +298,7 @@ impl GameStateMut for InternalState {
                     }
                 }
             },
-            CoreEvent::Spotted{..} => (),
+            CoreEvent::Reveal{..} => (),
             CoreEvent::ShowUnit{ref unit_info} => {
                 self.add_unit(unit_info, InfoLevel::Partial);
             },

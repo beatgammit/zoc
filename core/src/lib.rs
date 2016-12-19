@@ -299,7 +299,7 @@ pub enum CoreEvent {
         attack_info: AttackInfo,
     },
     // TODO: напиши хоть пару слов почему это отдельное от SHowUnit событие
-    Spotted {
+    Reveal {
         unit_info: UnitInfo,
     },
     ShowUnit {
@@ -1025,7 +1025,7 @@ impl Core {
                     let show_event = match self.state.unit_at_opt(to) {
                         Some(unit) => {
                             println!("unit: {:#?}", unit);
-                            Some(CoreEvent::Spotted {
+                            Some(CoreEvent::Reveal {
                                 unit_info: unit_to_info(unit),
                             })
                         },
