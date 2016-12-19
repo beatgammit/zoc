@@ -192,7 +192,7 @@ fn test_transporter_with_attached_unit_comes_out_of_fow() {
 }
 
 #[test]
-fn test_move_into_invisible_enemy() {
+fn test_jeep_moves_into_invisible_enemy_jeep() {
     let pos1 = MapPos{v: Vector2{x: 0, y: 0}};
     let pos2 = MapPos{v: Vector2{x: 1, y: 0}};
     let pos3 = MapPos{v: Vector2{x: 2, y: 0}};
@@ -219,37 +219,36 @@ fn test_move_into_invisible_enemy() {
     core.wait_show_unit(pos3, jeep2_id);
 
     assert_eq!(core.get_event(), None);
-
-    // core.wait_move(jeep1_id, &path1);
-    // core.command_end_turn();
-    // println!("core {:#?}", core); panic!();
 }
 
 #[test]
-fn test_tank_move_into_hidden_infantry() {
+fn test_jeep_move_into_hidden_smg() {
     let pos1 = MapPos{v: Vector2{x: 0, y: 0}};
     let pos2 = MapPos{v: Vector2{x: 1, y: 0}};
     let mut core = basic_core("map04");
 
     assert_eq!(core.player_id(), PlayerId{id: 0});
     core.command_create_ground_unit((pos1, 0), "jeep");
-    let jeep1_id = core.wait_create_unit(pos1, "jeep");
+    let jeep_id = core.wait_create_unit(pos1, "jeep");
     core.command_end_turn();
 
     assert_eq!(core.player_id(), PlayerId{id: 1});
     core.wait_end_turn(0, 1);
     core.command_create_ground_unit((pos2, 0), "smg");
-    let _ = core.wait_create_unit(pos2, "smg");
+    let smg_id = core.wait_create_unit(pos2, "smg");
     core.command_end_turn();
 
     assert_eq!(core.player_id(), PlayerId{id: 0});
     core.wait_end_turn(0, 1);
     core.wait_end_turn(1, 0);
     let path1 = [(pos1, 0), (pos2, 0)];
-    core.command_move(jeep1_id, &path1);
+    core.command_move(jeep_id, &path1);
+    core.wait_show_unit(pos2, smg_id);
+    core.command_end_turn();
 
-    while let Some(e) = core.get_event() {
-        println!("{:#?}", e);
-    }
-    panic!();
+    assert_eq!(core.player_id(), PlayerId{id: 1});
+    core.wait_show_unit(pos1, jeep_id);
+    core.wait_end_turn(1, 0);
+    core.wait_end_turn(0, 1);
+    assert_eq!(core.get_event(), None);
 }

@@ -211,6 +211,7 @@ impl Fow {
                     fov_unit_in_pos(&self.db, state, &mut self.map, unit, pos);
                 }
             },
+            CoreEvent::Spotted{..} |
             CoreEvent::ShowUnit{..} |
             CoreEvent::HideUnit{..} |
             CoreEvent::LoadUnit{..} |

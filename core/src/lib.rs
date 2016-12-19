@@ -297,6 +297,10 @@ pub enum CoreEvent {
     AttackUnit {
         attack_info: AttackInfo,
     },
+    // TODO: напиши хоть пару слов почему это отдельное от SHowUnit событие
+    Spotted {
+        unit_info: UnitInfo,
+    },
     ShowUnit {
         unit_info: UnitInfo,
     },
@@ -1017,21 +1021,17 @@ impl Core {
                 for window in path.windows(2) {
                     let from = window[0];
                     let to = window[1];
-                    if !is_exact_pos_free(
-                        &self.db,
-                        &self.state,
-                        self.state.unit(unit_id).type_id,
-                        to,
-                    ) {
-                        TODO: показать засранца, который не дает пройти.
-                        // TODO: или всех в той клетке? Наверное, всех.
-                        // TODO: и реакционный огонь, м?
-                        // или он и так из-за движения будет?
-                        /*
-                        self.do_core_event(&CoreEvent::ShowUnit {
-                            unit_info: self.state.unit(unit_id)
-                        })
-                        */
+                    let show_event = match self.state.unit_at_opt(to) {
+                        Some(unit) => {
+                            println!("unit: {:#?}", unit);
+                            Some(CoreEvent::Spotted {
+                                unit_info: unit_to_info(unit),
+                            })
+                        },
+                        None => None,
+                    };
+                    if let Some(event) = show_event {
+                        self.do_core_event(&event);
                         continue;
                     }
                     let event = {
