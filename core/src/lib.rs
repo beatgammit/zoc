@@ -18,6 +18,7 @@ mod ai;
 mod fov;
 mod fow;
 mod internal_state;
+mod full_state;
 mod filter;
 
 use rand::{thread_rng, Rng};
@@ -27,7 +28,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use cgmath::{Vector2};
 use types::{Size2};
 use misc::{clamp};
-use internal_state::{InternalState};
+use full_state::{FullState};
 use game_state::{GameState, GameStateMut, ObjectsAtIter};
 use partial_state::{PartialState};
 use tmp_partial_state::{TmpPartialState};
@@ -132,7 +133,7 @@ impl Iterator for ExactPosIter {
     }
 }
 
-fn check_sectors(db: &Db, state: &InternalState) -> Vec<CoreEvent> {
+fn check_sectors<S: GameState>(db: &Db, state: &S) -> Vec<CoreEvent> {
     let mut events = Vec::new();
     for (&sector_id, sector) in state.sectors() {
         let mut claimers = HashSet::new();
@@ -541,7 +542,7 @@ pub struct Options {
 
 #[derive(Clone, Debug)]
 pub struct Core {
-    state: InternalState,
+    state: FullState,
     players: Vec<Player>,
     current_player_id: PlayerId,
     db: Rc<Db>,
@@ -760,7 +761,7 @@ pub fn hit_chance<S: GameState>(
 impl Core {
     pub fn new(options: &Options) -> Core {
         let db = Rc::new(Db::new());
-        let state = InternalState::new(db.clone(), options);
+        let state = FullState::new(db.clone(), options);
         let map_size = state.map().size();
         let ai = Ai::new(&db, options, PlayerId{id:1});
         let players_info = get_player_info_lists(&db, map_size);

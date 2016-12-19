@@ -1,18 +1,17 @@
 use std::collections::hash_map::{self, HashMap};
 use std::rc::{Rc};
-use unit::{Unit};
 use db::{Db};
+use unit::{Unit};
 use map::{Map, Terrain};
 use internal_state::{InternalState};
 use game_state::{GameState, GameStateMut, UnitIter};
-use fow::{Fow, FakeFow, fake_fow};
+use fow::{FakeFow, fake_fow};
 use ::{
     CoreEvent,
     PlayerId,
     UnitId,
     ObjectId,
     Object,
-    MapPos,
     Score,
     Sector,
     SectorId,
@@ -21,30 +20,19 @@ use ::{
 };
 
 #[derive(Clone, Debug)]
-pub struct PartialState {
+pub struct FullState {
     state: InternalState,
-    fow: Fow,
-    db: Rc<Db>,
 }
 
-impl PartialState {
-    pub fn new(db: Rc<Db>, options: &Options, player_id: PlayerId) -> PartialState {
-        let state = InternalState::new(db.clone(), options);
-        let map_size = state.map().size();
-        let fow = Fow::new(db.clone(), map_size, player_id);
-        PartialState {
-            state: state,
-            fow: fow,
-            db: db,
+impl FullState {
+    pub fn new(db: Rc<Db>, options: &Options) -> FullState {
+        FullState {
+            state: InternalState::new(db, options),
         }
     }
-
-    pub fn is_tile_visible(&self, pos: MapPos) -> bool {
-        self.fow.is_tile_visible(pos)
-    }
 }
 
-impl GameState for PartialState {
+impl GameState for FullState {
     type Fow = FakeFow;
 
     fn units(&self) -> hash_map::Iter<UnitId, Unit> {
@@ -54,11 +42,7 @@ impl GameState for PartialState {
     fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self> {
         UnitIter {
             iter: self.state.units(), // что делать, когда этот метод будет убран?
-
-            // TODO: поясни нафиг тут поддельный Fow используется,
-            // а то странно
             fow: fake_fow(),
-
             state: self,
         }
     }
@@ -88,9 +72,8 @@ impl GameState for PartialState {
     }
 }
 
-impl GameStateMut for PartialState {
+impl GameStateMut for FullState {
     fn apply_event(&mut self, event: &CoreEvent) {
         self.state.apply_event(event);
-        self.fow.apply_event(&self.state, event);
     }
 }

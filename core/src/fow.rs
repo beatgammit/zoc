@@ -1,7 +1,6 @@
 use std::default::{Default};
 use std::rc::{Rc};
 use types::{Size2};
-use internal_state::{InternalState};
 use game_state::{GameState};
 use map::{Map, Terrain, distance};
 use fov::{fov, simple_fov};
@@ -21,18 +20,18 @@ impl Default for TileVisibility {
     fn default() -> Self { TileVisibility::No }
 }
 
-fn fov_unit(
+fn fov_unit<S: GameState>(
     db: &Db,
-    state: &InternalState,
+    state: &S,
     fow: &mut Map<TileVisibility>,
     unit: &Unit,
 ) {
     fov_unit_in_pos(db, state, fow, unit, unit.pos.map_pos);
 }
 
-fn fov_unit_in_pos(
+fn fov_unit_in_pos<S: GameState>(
     db: &Db,
-    state: &InternalState,
+    state: &S,
     fow: &mut Map<TileVisibility>,
     unit: &Unit,
     origin: MapPos,
@@ -162,7 +161,7 @@ impl Fow {
         }
     }
 
-    fn reset(&mut self, state: &InternalState) {
+    fn reset<S: GameState>(&mut self, state: &S) {
         self.clear();
         for (_, unit) in state.units() {
             if unit.player_id == self.player_id && unit.is_alive {
@@ -171,9 +170,9 @@ impl Fow {
         }
     }
 
-    pub fn apply_event(
+    pub fn apply_event<S: GameState>(
         &mut self,
-        state: &InternalState,
+        state: &S,
         event: &CoreEvent,
     ) {
         match *event {

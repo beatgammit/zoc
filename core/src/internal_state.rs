@@ -37,6 +37,7 @@ pub enum InfoLevel {
     Partial,
 }
 
+// TODO: BareGameState?
 #[derive(Clone, Debug)]
 pub struct InternalState {
     units: HashMap<UnitId, Unit>,

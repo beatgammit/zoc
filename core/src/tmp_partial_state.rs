@@ -1,7 +1,7 @@
 use std::collections::hash_map::{self, HashMap};
 use unit::{Unit};
 use map::{Map, Terrain};
-use internal_state::{InternalState};
+use full_state::{FullState};
 use game_state::{GameState, UnitIter};
 use fow::{Fow};
 use ::{
@@ -17,13 +17,13 @@ use ::{
 
 #[derive(Clone, Debug)]
 pub struct TmpPartialState<'a> {
-    state: &'a InternalState,
+    state: &'a FullState,
     fow: &'a Fow,
 }
 
 impl<'a> TmpPartialState<'a> {
     pub fn new(
-        state: &'a InternalState,
+        state: &'a FullState,
         fow: &'a Fow,
     ) -> TmpPartialState<'a> {
         TmpPartialState {
