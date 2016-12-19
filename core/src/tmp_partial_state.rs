@@ -1,9 +1,8 @@
-use std::collections::{HashMap};
-use std::collections::hash_map;
+use std::collections::hash_map::{self, HashMap};
 use unit::{Unit};
 use map::{Map, Terrain};
 use internal_state::{InternalState};
-use game_state::{GameState};
+use game_state::{GameState, UnitIter};
 use fow::{Fow};
 use ::{
     PlayerId,
@@ -35,14 +34,23 @@ impl<'a> TmpPartialState<'a> {
 }
 
 impl<'a> GameState for TmpPartialState<'a> {
+    type Fow = Fow;
+
+    fn units2<'b>(&'b self) -> UnitIter<'b, Self::Fow, Self> {
+        UnitIter {
+            iter: self.state.units(), // что делать, когда этот метод будет убран?
+            fow: self.fow,
+            state: self,
+        }
+    }
+
     fn units(&self) -> hash_map::Iter<UnitId, Unit> {
         // self.state.units().filter(|x| true)
         self.state.units()
     }
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit> {
-        // TODO: фильтровать леваков
-        self.state.unit_opt(id)
+        self.state.unit_opt(id) // TODO: фильтровать леваков
     }
 
     fn objects(&self) -> &HashMap<ObjectId, Object> {

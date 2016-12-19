@@ -1,8 +1,7 @@
-use std::collections::{HashMap};
-use std::collections::hash_map;
+use std::collections::hash_map::{self, HashMap};
 use unit::{Unit};
-use db::{Db};
 use map::{Map, Terrain};
+use fow::{FogOfWar};
 use ::{
     CoreEvent,
     UnitId,
@@ -44,12 +43,12 @@ impl<'a> Iterator for ObjectsAtIter<'a> {
 }
 
 #[derive(Clone)]
-pub struct UnitsAtIter<'a> {
-    it: hash_map::Iter<'a, UnitId, Unit>,
+pub struct UnitsAtIter<'a, Fow: FogOfWar + 'a, S: GameState + 'a> {
+    it: UnitIter<'a, Fow, S>,
     pos: MapPos,
 }
 
-impl<'a> Iterator for UnitsAtIter<'a> {
+impl<'a, Fow: FogOfWar + 'a, S: GameState + 'a> Iterator for UnitsAtIter<'a, Fow, S> {
     type Item = &'a Unit;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -62,16 +61,14 @@ impl<'a> Iterator for UnitsAtIter<'a> {
     }
 }
 
-pub trait GameState {
+pub trait GameState: Sized + Clone {
+    type Fow: FogOfWar;
+
     fn map(&self) -> &Map<Terrain>;
 
     fn units(&self) -> hash_map::Iter<UnitId, Unit>;
 
-    /*
-    fn units2(&self) -> hash_map::Iter<UnitId, Unit> {
-        self.units().iter()
-    }
-    */
+    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self>;
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit>;
 
@@ -84,8 +81,8 @@ pub trait GameState {
         self.unit_opt(id).unwrap()
     }
 
-    fn units_at(&self, pos: MapPos) -> UnitsAtIter {
-        UnitsAtIter{it: self.units(), pos: pos}
+    fn units_at(&self, pos: MapPos) -> UnitsAtIter<Self::Fow, Self> {
+        UnitsAtIter{it: self.units2(), pos: pos}
     }
 
     fn objects_at(&self, pos: MapPos) -> ObjectsAtIter {
@@ -94,5 +91,29 @@ pub trait GameState {
 }
 
 pub trait GameStateMut: GameState {
-    fn apply_event(&mut self, db: &Db, event: &CoreEvent);
+    fn apply_event(&mut self, event: &CoreEvent);
+}
+
+#[derive(Clone)]
+pub struct UnitIter<'a, Fow: FogOfWar + 'a, S: GameState + 'a> {
+    pub iter: hash_map::Iter<'a, UnitId, Unit>,
+    pub fow: &'a Fow,
+    pub state: &'a S,
+}
+
+impl<'a, S: GameState, Fow: FogOfWar> Iterator for UnitIter<'a, Fow, S> {
+    type Item = (&'a UnitId, &'a Unit);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(pair) = self.iter.next() {
+            let (_, unit) = pair;
+            if self.fow.is_visible(self.state, unit, unit.pos) {
+                println!("Noooo?");
+                return Some(pair);
+            } else {
+                println!("YYEESSS");
+            }
+        }
+        None
+    }
 }

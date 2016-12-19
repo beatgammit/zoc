@@ -1,11 +1,12 @@
-use std::collections::{HashMap};
-use std::collections::hash_map;
+use std::collections::hash_map::{self, HashMap};
+use std::rc::{Rc};
 use cgmath::{Vector2};
 use types::{Size2};
 use unit::{Unit};
+use fow::{FakeFow, fake_fow};
 use db::{Db};
 use map::{Map, Terrain};
-use game_state::{GameState, GameStateMut};
+use game_state::{GameState, GameStateMut, UnitIter};
 use dir::{Dir};
 use ::{
     CoreEvent,
@@ -45,10 +46,11 @@ pub struct InternalState {
     score: HashMap<PlayerId, Score>,
     reinforcement_points: HashMap<PlayerId, ReinforcementPoints>,
     players_count: i32,
+    db: Rc<Db>,
 }
 
 impl InternalState {
-    pub fn new(options: &Options) -> InternalState {
+    pub fn new(db: Rc<Db>, options: &Options) -> InternalState {
         let mut score = HashMap::new();
         score.insert(PlayerId{id: 0}, Score{n: 0});
         score.insert(PlayerId{id: 1}, Score{n: 0});
@@ -64,14 +66,15 @@ impl InternalState {
             score: score,
             reinforcement_points: reinforcement_points,
             players_count: options.players_count,
+            db: db,
         }
     }
 
     /// Converts active ap (attack points) to reactive
-    fn convert_ap(&mut self, db: &Db, player_id: PlayerId) {
+    fn convert_ap(&mut self, player_id: PlayerId) {
         for (_, unit) in &mut self.units {
-            let unit_type = db.unit_type(unit.type_id);
-            let weapon_type = db.weapon_type(unit_type.weapon_type_id);
+            let unit_type = self.db.unit_type(unit.type_id);
+            let weapon_type = self.db.weapon_type(unit_type.weapon_type_id);
             if unit.player_id != player_id || !weapon_type.reaction_fire {
                 continue;
             }
@@ -86,10 +89,10 @@ impl InternalState {
         }
     }
 
-    fn refresh_units(&mut self, db: &Db, player_id: PlayerId) {
+    fn refresh_units(&mut self, player_id: PlayerId) {
         for (_, unit) in &mut self.units {
             if unit.player_id == player_id {
-                let unit_type = db.unit_type(unit.type_id);
+                let unit_type = self.db.unit_type(unit.type_id);
                 if let Some(ref mut move_points) = unit.move_points {
                     *move_points = unit_type.move_points;
                 }
@@ -108,9 +111,9 @@ impl InternalState {
         }
     }
 
-    fn add_unit(&mut self, db: &Db, unit_info: &UnitInfo, info_level: InfoLevel) {
+    fn add_unit(&mut self, unit_info: &UnitInfo, info_level: InfoLevel) {
         assert!(self.units.get(&unit_info.unit_id).is_none());
-        let unit_type = db.unit_type(unit_info.type_id);
+        let unit_type = self.db.unit_type(unit_info.type_id);
         let reinforcement_points = self.reinforcement_points
             .get_mut(&unit_info.player_id).unwrap();
         if *reinforcement_points < unit_type.cost {
@@ -152,6 +155,16 @@ impl InternalState {
 }
 
 impl GameState for InternalState {
+    type Fow = FakeFow;
+
+    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow, Self> {
+        UnitIter {
+            iter: self.units.iter(),
+            fow: fake_fow(),
+            state: self,
+        }
+    }
+
     fn units(&self) -> hash_map::Iter<UnitId, Unit> {
         self.units.iter()
     }
@@ -182,7 +195,7 @@ impl GameState for InternalState {
 }
 
 impl GameStateMut for InternalState {
-    fn apply_event(&mut self, db: &Db, event: &CoreEvent) {
+    fn apply_event(&mut self, event: &CoreEvent) {
         match *event {
             CoreEvent::Move{unit_id, to, cost, ..} => {
                 {
@@ -209,8 +222,8 @@ impl GameStateMut for InternalState {
                         .get_mut(&old_id).unwrap();
                     reinforcement_points.n += 10;
                 }
-                self.refresh_units(db, new_id);
-                self.convert_ap(db, old_id);
+                self.refresh_units(new_id);
+                self.convert_ap(old_id);
                 // TODO: timer ticks on every player's turn! O.o
                 for (_, object) in &mut self.objects {
                     if let Some(ref mut timer) = object.timer {
@@ -220,7 +233,7 @@ impl GameStateMut for InternalState {
                 }
             },
             CoreEvent::CreateUnit{ref unit_info} => {
-                self.add_unit(db, unit_info, InfoLevel::Full);
+                self.add_unit(unit_info, InfoLevel::Full);
             },
             CoreEvent::AttackUnit{ref attack_info} => {
                 let count;
@@ -285,7 +298,7 @@ impl GameStateMut for InternalState {
                 }
             },
             CoreEvent::ShowUnit{ref unit_info} => {
-                self.add_unit(db, unit_info, InfoLevel::Partial);
+                self.add_unit(unit_info, InfoLevel::Partial);
             },
             CoreEvent::HideUnit{unit_id} => {
                 assert!(self.units.get(&unit_id).is_some());
@@ -315,7 +328,7 @@ impl GameStateMut for InternalState {
                     unit.pos = unit_info.pos;
                     return;
                 }
-                self.add_unit(db, unit_info, InfoLevel::Partial);
+                self.add_unit(unit_info, InfoLevel::Partial);
             },
             CoreEvent::Attach{transporter_id, attached_unit_id, to, ..} => {
                 if let Some(passenger_id) = self.unit(transporter_id).passenger_id {
@@ -472,6 +485,8 @@ fn load_map(map_name: &str) -> MapInfo {
     match map_name {
         "map01" => load_map_01(),
         "map02" => load_map_02(),
+        "map03" => load_map_03(),
+        "map04" => load_map_04(),
         _ => unimplemented!(),
     }
 }
@@ -632,5 +647,51 @@ fn load_map_02() -> MapInfo {
             owner_id: None,
         },
     );
+    (map, objects, sectors)
+}
+
+fn load_map_03() -> MapInfo {
+    let map_size = Size2{w: 3, h: 1};
+    let mut objects = HashMap::new();
+    let mut map = Map::new(map_size);
+    let sectors = HashMap::new();
+    for &((x, y), terrain) in &[
+        ((1, 0), Terrain::Trees),
+    ] {
+        *map.tile_mut(MapPos{v: Vector2{x: x, y: y}}) = terrain;
+    }
+    for &((x, y), player_index) in &[
+        ((0, 0), 0),
+        ((2, 0), 1),
+    ] {
+        add_reinforcement_sector(
+            &mut objects,
+            MapPos{v: Vector2{x: x, y: y}},
+            Some(PlayerId{id: player_index}),
+        );
+    }
+    (map, objects, sectors)
+}
+
+fn load_map_04() -> MapInfo {
+    let map_size = Size2{w: 2, h: 1};
+    let mut objects = HashMap::new();
+    let mut map = Map::new(map_size);
+    let sectors = HashMap::new();
+    for &((x, y), terrain) in &[
+        ((1, 0), Terrain::Trees),
+    ] {
+        *map.tile_mut(MapPos{v: Vector2{x: x, y: y}}) = terrain;
+    }
+    for &((x, y), player_index) in &[
+        ((0, 0), 0),
+        ((1, 0), 1),
+    ] {
+        add_reinforcement_sector(
+            &mut objects,
+            MapPos{v: Vector2{x: x, y: y}},
+            Some(PlayerId{id: player_index}),
+        );
+    }
     (map, objects, sectors)
 }
