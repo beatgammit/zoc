@@ -6,7 +6,15 @@ use map::{Map, Terrain, distance};
 use fov::{fov, simple_fov};
 use db::{Db};
 use unit::{Unit, UnitType};
-use ::{CoreEvent, PlayerId, MapPos, ExactPos, ObjectClass, is_passenger_or_attached};
+use ::{
+    CoreEvent,
+    PlayerId,
+    MapPos,
+    ExactPos,
+    ObjectClass,
+    SlotId,
+    is_passenger_or_attached,
+};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub enum TileVisibility {
@@ -29,6 +37,7 @@ fn fov_unit<S: GameState>(
     fov_unit_in_pos(db, state, fow, unit, unit.pos.map_pos);
 }
 
+// Реализовать такую-же колбасу для воздушого слоя с нужным радиусом
 fn fov_unit_in_pos<S: GameState>(
     db: &Db,
     state: &S,
@@ -106,6 +115,7 @@ impl Fow {
         }
     }
 
+    // TODO: переименовать в is_ground_tile_visivle?
     pub fn is_tile_visible(&self, pos: MapPos) -> bool {
         match *self.map.tile(pos) {
             TileVisibility::Excellent |
@@ -114,30 +124,22 @@ impl Fow {
         }
     }
 
-    fn check_terrain_visibility(&self, unit_type: &UnitType, pos: MapPos) -> bool {
-        match *self.map.tile(pos) {
-            TileVisibility::Excellent => true,
-            TileVisibility::Normal => !unit_type.is_infantry,
-            TileVisibility::No => false,
-        }
-    }
-
     pub fn is_visible(&self, unit: &Unit, pos: ExactPos) -> bool {
-        if is_passenger_or_attached(unit) {
-            return false;
+        if pos.slot_id == SlotId::Air {
+            *self.air_map.tile(pos.map_pos) != TileVisibility::No
+        } else if is_passenger_or_attached(unit) {
+            false
+        } else {
+            let unit_type = self.db.unit_type(unit.type_id);
+            match *self.map.tile(pos.map_pos) {
+                TileVisibility::Excellent => true,
+                TileVisibility::Normal => !unit_type.is_infantry,
+                TileVisibility::No => false,
+            }
         }
-        let unit_type = self.db.unit_type(unit.type_id);
         /*
         // TODO: вот это все заменить на второй слой в Fow
         if unit_type.is_air {
-            // TODO: туповатая проверка
-            // так воздушный юнит может пропасть из видимости
-            // просто если увести наблюдателя.
-            //
-            // лучше запилить второй слой в тумане войны
-            //
-            // TODO: опасноcnm рекурсии и вообще надо переделать
-            //
             for (_, enemy_unit) in state.units() {
                 if enemy_unit.player_id == unit.player_id {
                     continue;
@@ -150,7 +152,6 @@ impl Fow {
             }
         }
         */
-        self.check_terrain_visibility(unit_type, pos.map_pos)
     }
 
     fn clear(&mut self) {
