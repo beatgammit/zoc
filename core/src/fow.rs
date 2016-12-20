@@ -28,44 +28,6 @@ impl Default for TileVisibility {
     fn default() -> Self { TileVisibility::No }
 }
 
-fn fov_unit<S: GameState>(
-    db: &Db,
-    state: &S,
-    fow: &mut Map<TileVisibility>,
-    unit: &Unit,
-) {
-    fov_unit_in_pos(db, state, fow, unit, unit.pos.map_pos);
-}
-
-// Реализовать такую-же колбасу для воздушого слоя с нужным радиусом
-fn fov_unit_in_pos<S: GameState>(
-    db: &Db,
-    state: &S,
-    fow: &mut Map<TileVisibility>,
-    unit: &Unit,
-    origin: MapPos,
-) {
-    assert!(unit.is_alive);
-    let unit_type = db.unit_type(unit.type_id);
-    let range = unit_type.los_range;
-    let f = if unit_type.is_air {
-        simple_fov
-    } else {
-        fov
-    };
-    f(
-        state,
-        origin,
-        range,
-        &mut |pos| {
-            let vis = calc_visibility(state, unit_type, origin, pos);
-            if vis > *fow.tile_mut(pos) {
-                *fow.tile_mut(pos) = vis;
-            }
-        },
-    );
-}
-
 fn calc_visibility<S: GameState>(
     state: &S,
     unit_type: &UnitType,
@@ -137,21 +99,29 @@ impl Fow {
                 TileVisibility::No => false,
             }
         }
-        /*
-        // TODO: вот это все заменить на второй слой в Fow
-        if unit_type.is_air {
-            for (_, enemy_unit) in state.units() {
-                if enemy_unit.player_id == unit.player_id {
-                    continue;
-                }
-                let enemy_unit_type = self.db.unit_type(enemy_unit.type_id);
-                let distance = distance(pos.map_pos, enemy_unit.pos.map_pos);
-                if distance <= enemy_unit_type.los_range {
-                    return true;
-                }
+    }
+
+    fn fov_unit<S: GameState>(&mut self, state: &S, unit: &Unit) {
+        assert!(unit.is_alive);
+        let origin = unit.pos.map_pos;
+        let unit_type = self.db.unit_type(unit.type_id);
+        let range = unit_type.los_range;
+        let ground_fow = &mut self.map;
+        let ground_cb = &mut |pos| {
+            let vis = calc_visibility(state, unit_type, origin, pos);
+            if vis > *ground_fow.tile_mut(pos) {
+                *ground_fow.tile_mut(pos) = vis;
             }
+        };
+        if unit.pos.slot_id == SlotId::Air {
+            simple_fov(state, origin, range, ground_cb);
+        } else {
+            fov(state, origin, range, ground_cb);
         }
-        */
+        let air_fow = &mut self.air_map;
+        simple_fov(state, origin, range, &mut |pos| {
+            *air_fow.tile_mut(pos) = TileVisibility::Excellent;
+        });
     }
 
     fn clear(&mut self) {
@@ -165,7 +135,7 @@ impl Fow {
         self.clear();
         for (_, unit) in state.units2() {
             if unit.player_id == self.player_id && unit.is_alive {
-                fov_unit(&self.db, state, &mut self.map, unit);
+                self.fov_unit(state, unit);
             }
         }
     }
@@ -176,11 +146,10 @@ impl Fow {
         event: &CoreEvent,
     ) {
         match *event {
-            CoreEvent::Move{unit_id, to, ..} => {
+            CoreEvent::Move{unit_id, ..} => {
                 let unit = state.unit(unit_id);
                 if unit.player_id == self.player_id {
-                    fov_unit_in_pos(
-                        &self.db, state, &mut self.map, unit, to.map_pos);
+                    self.fov_unit(state, unit);
                 }
             },
             CoreEvent::EndTurn{new_id, ..} => {
@@ -191,7 +160,7 @@ impl Fow {
             CoreEvent::CreateUnit{ref unit_info} => {
                 let unit = state.unit(unit_info.unit_id);
                 if self.player_id == unit_info.player_id {
-                    fov_unit(&self.db, state, &mut self.map, unit);
+                    self.fov_unit(state, unit);
                 }
             },
             CoreEvent::AttackUnit{ref attack_info} => {
@@ -206,8 +175,7 @@ impl Fow {
             CoreEvent::UnloadUnit{ref unit_info, ..} => {
                 if self.player_id == unit_info.player_id {
                     let unit = state.unit(unit_info.unit_id);
-                    let pos = unit_info.pos.map_pos;
-                    fov_unit_in_pos(&self.db, state, &mut self.map, unit, pos);
+                    self.fov_unit(state, unit);
                 }
             },
             CoreEvent::Reveal{..} |
@@ -215,7 +183,11 @@ impl Fow {
             CoreEvent::HideUnit{..} |
             CoreEvent::LoadUnit{..} |
             CoreEvent::Attach{..} |
+
+            // TODO: хм, тут тоже надо бы расширить область видимости, как и в UnloadUnit
+            // TODO: накатай тест
             CoreEvent::Detach{..} |
+
             CoreEvent::SetReactionFireMode{..} |
             CoreEvent::SectorOwnerChanged{..} |
             CoreEvent::Smoke{..} |
@@ -228,9 +200,8 @@ impl Fow {
 #[derive(Clone, Debug)]
 pub struct FakeFow;
 
-static FAKE_FOW: FakeFow = FakeFow;
-
 pub fn fake_fow() -> &'static FakeFow {
+    static FAKE_FOW: FakeFow = FakeFow;
     &FAKE_FOW
 }
 
@@ -246,7 +217,6 @@ impl FogOfWar for FakeFow {
 
 impl FogOfWar for Fow {
     fn is_visible(&self, unit: &Unit, pos: ExactPos) -> bool {
-        // self.is_visible(state, unit, pos)
         self.is_visible(unit, pos)
     }
 }

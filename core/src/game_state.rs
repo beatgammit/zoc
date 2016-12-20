@@ -121,10 +121,10 @@ impl<'a, Fow: FogOfWar> Iterator for UnitIter<'a, Fow> {
         while let Some(pair) = self.iter.next() {
             let (_, unit) = pair;
             if self.fow.is_visible(unit, unit.pos) {
-                println!("Noooo?");
+                // println!("Noooo?");
                 return Some(pair);
             } else {
-                println!("YYEESSS");
+                // println!("YYEESSS");
             }
         }
         None
