@@ -949,8 +949,7 @@ impl Core {
             ),
             &command,
         ) {
-            println!("Bad command: {:?}", err);
-            return;
+            panic!("Bad command: {:?}", err);
         }
         match command {
             Command::EndTurn => {
@@ -1010,7 +1009,6 @@ impl Core {
                     let to = window[1];
                     let show_event = match self.state.unit_at_opt(to) {
                         Some(unit) => {
-                            println!("unit: {:#?}", unit);
                             Some(CoreEvent::Reveal {
                                 unit_info: unit_to_info(unit),
                             })

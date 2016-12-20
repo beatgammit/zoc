@@ -131,7 +131,6 @@ pub fn check_command<S: GameState>(
             Ok(())
         },
         Command::Move{unit_id, ref path, mode} => {
-            println!("check move <");
             let unit = match state.unit_opt(unit_id) {
                 Some(transporter) => transporter,
                 None => return Err(CommandError::BadUnitId),
@@ -157,7 +156,6 @@ pub fn check_command<S: GameState>(
             if cost > move_points.n {
                 return Err(CommandError::NotEnoughMovePoints);
             }
-            println!("check move >");
             Ok(())
         },
         Command::AttackUnit{attacker_id, defender_id} => {
