@@ -410,7 +410,7 @@ impl TacticalScreen {
         let player_info = self.player_info.get_mut(self.core.player_id());
         let state = &player_info.game_state;
         let scene = &mut player_info.scene;
-        for (_, unit) in state.units2() {
+        for (_, unit) in state.units() {
             let unit_type = self.core.db().unit_type(unit.type_id);
             if unit_type.is_air {
                 let node_id = scene.unit_id_to_node_id(unit.id);
@@ -983,7 +983,7 @@ impl TacticalScreen {
                 let node_id = node_ids.into_iter().next().unwrap();
                 scene.node_mut(node_id)
             };
-            for (_, unit) in state.units2() {
+            for (_, unit) in state.units() {
                 let unit_type = self.core.db().unit_type(unit.type_id);
                 if unit_type.is_air {
                     continue;

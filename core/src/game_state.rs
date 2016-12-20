@@ -64,12 +64,11 @@ impl<'a, Fow: FogOfWar + 'a> Iterator for UnitsAtIter<'a, Fow> {
 
 pub trait GameState: Sized + Clone {
     type Fow: FogOfWar;
+    // type It: Iterator;
 
     fn map(&self) -> &Map<Terrain>;
 
-    fn units(&self) -> hash_map::Iter<UnitId, Unit>;
-
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow>;
+    fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow>;
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit>;
 
@@ -83,7 +82,7 @@ pub trait GameState: Sized + Clone {
     }
 
     fn units_at(&self, pos: MapPos) -> UnitsAtIter<Self::Fow> {
-        UnitsAtIter{it: self.units2(), pos: pos}
+        UnitsAtIter{it: self.units(), pos: pos}
     }
 
     fn unit_at_opt(&self, pos: ExactPos) -> Option<&Unit> {

@@ -129,7 +129,7 @@ pub fn build_targets_mesh(db: &Db, context: &mut Context, state: &PartialState, 
     let mut indices = Vec::new();
     let unit = state.unit(unit_id);
     let mut i = 0;
-    for (&enemy_id, enemy) in state.units2() {
+    for (&enemy_id, enemy) in state.units() {
         if unit.player_id == enemy.player_id {
             continue;
         }

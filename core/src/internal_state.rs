@@ -71,6 +71,10 @@ impl InternalState {
         }
     }
 
+    pub fn raw_units(&self) -> hash_map::Iter<UnitId, Unit> {
+        self.units.iter()
+    }
+
     /// Converts active ap (attack points) to reactive
     fn convert_ap(&mut self, player_id: PlayerId) {
         for (_, unit) in &mut self.units {
@@ -160,15 +164,11 @@ impl InternalState {
 impl GameState for InternalState {
     type Fow = FakeFow;
 
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
+    fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
         UnitIter {
             iter: self.units.iter(),
             fow: fake_fow(),
         }
-    }
-
-    fn units(&self) -> hash_map::Iter<UnitId, Unit> {
-        self.units.iter()
     }
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit> {

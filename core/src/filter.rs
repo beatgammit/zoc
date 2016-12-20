@@ -19,7 +19,7 @@ pub fn get_visible_enemies(
     player_id: PlayerId,
 ) -> HashSet<UnitId> {
     let mut visible_enemies = HashSet::new();
-    for (&id, unit) in state.units2() {
+    for (&id, unit) in state.units() {
         if unit.player_id != player_id
             && fow.is_visible(unit, unit.pos)
         {

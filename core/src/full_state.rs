@@ -1,4 +1,4 @@
-use std::collections::hash_map::{self, HashMap};
+use std::collections::{HashMap};
 use std::rc::{Rc};
 use db::{Db};
 use unit::{Unit};
@@ -30,18 +30,18 @@ impl FullState {
             state: InternalState::new(db, options),
         }
     }
+
+    pub fn inner(&self) -> &InternalState {
+        &self.state
+    }
 }
 
 impl GameState for FullState {
     type Fow = FakeFow;
 
-    fn units(&self) -> hash_map::Iter<UnitId, Unit> {
-        self.state.units()
-    }
-
-    fn units2<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
+    fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
         UnitIter {
-            iter: self.state.units(), // что делать, когда этот метод будет убран?
+            iter: self.state.raw_units(),
             fow: fake_fow(),
         }
     }

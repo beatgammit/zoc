@@ -133,7 +133,7 @@ impl Fow {
 
     fn reset<S: GameState>(&mut self, state: &S) {
         self.clear();
-        for (_, unit) in state.units2() {
+        for (_, unit) in state.units() {
             if unit.player_id == self.player_id && unit.is_alive {
                 self.fov_unit(state, unit);
             }
