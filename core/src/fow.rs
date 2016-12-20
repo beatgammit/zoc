@@ -62,7 +62,7 @@ fn calc_visibility<S: GameState>(
 #[derive(Clone, Debug)]
 pub struct Fow {
     map: Map<TileVisibility>,
-    air_map: Map<TileVisibility>, // TODO: придумай чего-то для вертолетов
+    air_map: Map<TileVisibility>,
     player_id: PlayerId,
     db: Rc<Db>,
 }
@@ -77,8 +77,7 @@ impl Fow {
         }
     }
 
-    // TODO: переименовать в is_ground_tile_visivle?
-    pub fn is_tile_visible(&self, pos: MapPos) -> bool {
+    pub fn is_ground_tile_visible(&self, pos: MapPos) -> bool {
         match *self.map.tile(pos) {
             TileVisibility::Excellent |
             TileVisibility::Normal => true,

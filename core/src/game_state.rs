@@ -64,7 +64,6 @@ impl<'a, Fow: FogOfWar + 'a> Iterator for UnitsAtIter<'a, Fow> {
 
 pub trait GameState: Sized + Clone {
     type Fow: FogOfWar;
-    // type It: Iterator;
 
     fn map(&self) -> &Map<Terrain>;
 
@@ -120,10 +119,7 @@ impl<'a, Fow: FogOfWar> Iterator for UnitIter<'a, Fow> {
         while let Some(pair) = self.iter.next() {
             let (_, unit) = pair;
             if self.fow.is_visible(unit, unit.pos) {
-                // println!("Noooo?");
                 return Some(pair);
-            } else {
-                // println!("YYEESSS");
             }
         }
         None

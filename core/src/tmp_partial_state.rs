@@ -44,7 +44,14 @@ impl<'a> GameState for TmpPartialState<'a> {
     }
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit> {
-        self.state.unit_opt(id) // TODO: фильтровать леваков
+        match self.state.unit_opt(id) {
+            Some(unit) => if self.fow.is_visible(unit, unit.pos) {
+                Some(unit)
+            } else {
+                None
+            },
+            None => None,
+        }
     }
 
     fn objects(&self) -> &HashMap<ObjectId, Object> {
