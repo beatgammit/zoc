@@ -36,7 +36,7 @@ impl<'a> TmpPartialState<'a> {
 impl<'a> GameState for TmpPartialState<'a> {
     type Fow = Fow;
 
-    fn units<'b>(&'b self) -> UnitIter<'b, Self::Fow> {
+    fn units(&self) -> UnitIter<Self::Fow> {
         UnitIter {
             iter: self.state.inner().raw_units(),
             fow: self.fow,

@@ -39,7 +39,7 @@ impl FullState {
 impl GameState for FullState {
     type Fow = FakeFow;
 
-    fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
+    fn units(&self) -> UnitIter<Self::Fow> {
         UnitIter {
             iter: self.state.raw_units(),
             fow: fake_fow(),

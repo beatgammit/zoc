@@ -32,7 +32,7 @@ impl<'a> Iterator for ObjectsAtIter<'a> {
     type Item = &'a Object;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((_, object)) = self.it.next() {
+        for (_, object) in &mut self.it {
             for map_pos in object.pos.map_pos_iter() {
                 if self.pos == map_pos {
                     return Some(object);
@@ -53,7 +53,7 @@ impl<'a, Fow: FogOfWar + 'a> Iterator for UnitsAtIter<'a, Fow> {
     type Item = &'a Unit;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some((_, unit)) = self.it.next() {
+        for (_, unit) in &mut self.it {
             if self.pos == unit.pos.map_pos {
                 return Some(unit);
             }
@@ -67,7 +67,7 @@ pub trait GameState: Sized + Clone {
 
     fn map(&self) -> &Map<Terrain>;
 
-    fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow>;
+    fn units(&self) -> UnitIter<Self::Fow>;
 
     fn unit_opt(&self, id: UnitId) -> Option<&Unit>;
 
@@ -116,7 +116,7 @@ impl<'a, Fow: FogOfWar> Iterator for UnitIter<'a, Fow> {
     type Item = (&'a UnitId, &'a Unit);
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(pair) = self.iter.next() {
+        for pair in &mut self.iter {
             let (_, unit) = pair;
             if self.fow.is_visible(unit, unit.pos) {
                 return Some(pair);

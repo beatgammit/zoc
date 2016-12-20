@@ -47,7 +47,7 @@ impl PartialState {
 impl GameState for PartialState {
     type Fow = FakeFow;
 
-    fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
+    fn units(&self) -> UnitIter<Self::Fow> {
         // self.state doesn't have any 'unknown' information so we don't have to filter it
         let fow = fake_fow();
         UnitIter {
