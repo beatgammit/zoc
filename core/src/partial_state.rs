@@ -48,12 +48,11 @@ impl GameState for PartialState {
     type Fow = FakeFow;
 
     fn units<'a>(&'a self) -> UnitIter<'a, Self::Fow> {
+        // self.state doesn't have any 'unknown' information so we don't have to filter it
+        let fow = fake_fow();
         UnitIter {
             iter: self.state.raw_units(),
-
-            // TODO: поясни нафиг тут поддельный Fow используется,
-            // а то странно
-            fow: fake_fow(),
+            fow: fow,
         }
     }
 

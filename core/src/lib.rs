@@ -299,7 +299,7 @@ pub enum CoreEvent {
     AttackUnit {
         attack_info: AttackInfo,
     },
-    // TODO: напиши хоть пару слов почему это отдельное от SHowUnit событие
+    // Reveal is like ShowUnit but is generated directly by Core
     Reveal {
         unit_info: UnitInfo,
     },
