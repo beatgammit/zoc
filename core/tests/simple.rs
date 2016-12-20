@@ -252,3 +252,27 @@ fn test_jeep_move_into_hidden_smg() {
     core.wait_end_turn(0, 1);
     assert_eq!(core.get_event(), None);
 }
+
+#[test]
+fn test_can_see_air_unit() {
+    let pos_a = MapPos{v: Vector2{x: 0, y: 0}};
+    let pos_b = MapPos{v: Vector2{x: 1, y: 0}};
+    let mut core = basic_core("map04");
+
+    assert_eq!(core.player_id(), PlayerId{id: 0});
+    core.command_create_ground_unit((pos_a, 0), "truck");
+    let _ = core.wait_create_unit(pos_a, "truck");
+    core.command_end_turn();
+
+    assert_eq!(core.player_id(), PlayerId{id: 1});
+    core.wait_end_turn(0, 1);
+    core.command_create_air_unit_at(pos_b, "helicopter");
+    let _ = core.wait_create_unit(pos_b, "helicopter");
+    core.command_end_turn();
+
+    assert_eq!(core.player_id(), PlayerId{id: 0});
+    core.wait_end_turn(0, 1);
+    let _ = core.wait_create_unit(pos_b, "helicopter");
+    core.wait_end_turn(1, 0);
+    assert_eq!(core.get_event(), None);
+}
