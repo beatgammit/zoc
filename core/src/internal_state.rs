@@ -339,7 +339,10 @@ impl GameStateMut for InternalState {
                 if let Some(passenger_id) = self.unit(transporter_id).passenger_id {
                     let passenger = self.units.get_mut(&passenger_id).unwrap();
                     passenger.pos = to;
-                    passenger.is_attached = true;
+                }
+                {
+                    let attached_unit = self.units.get_mut(&attached_unit_id).unwrap();
+                    attached_unit.is_attached = true;
                 }
                 let transporter = self.units.get_mut(&transporter_id).unwrap();
                 transporter.pos = to;
@@ -352,10 +355,10 @@ impl GameStateMut for InternalState {
                 if let Some(passenger_id) = self.unit(transporter_id).passenger_id {
                     let passenger = self.units.get_mut(&passenger_id).unwrap();
                     passenger.pos = to;
-                    passenger.is_attached = false;
                 }
                 if let Some(attached_unit_id) = self.unit(transporter_id).attached_unit_id {
                     let attached_unit = self.units.get_mut(&attached_unit_id).unwrap();
+                    attached_unit.is_attached = false;
                     if let Some(ref mut move_points) = attached_unit.move_points {
                         move_points.n = 0;
                     }

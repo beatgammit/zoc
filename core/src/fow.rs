@@ -6,15 +6,7 @@ use map::{Map, Terrain, distance};
 use fov::{fov, simple_fov};
 use db::{Db};
 use unit::{Unit, UnitType};
-use ::{
-    CoreEvent,
-    PlayerId,
-    MapPos,
-    ExactPos,
-    ObjectClass,
-    SlotId,
-    is_passenger_or_attached,
-};
+use ::{CoreEvent, PlayerId, MapPos, ExactPos, ObjectClass, SlotId};
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 pub enum TileVisibility {
@@ -88,7 +80,7 @@ impl Fow {
     pub fn is_visible(&self, unit: &Unit, pos: ExactPos) -> bool {
         if pos.slot_id == SlotId::Air {
             *self.air_map.tile(pos.map_pos) != TileVisibility::No
-        } else if is_passenger_or_attached(unit) {
+        } else if unit.is_loaded {
             false
         } else {
             let unit_type = self.db.unit_type(unit.type_id);
@@ -177,16 +169,17 @@ impl Fow {
                     self.fov_unit(state, unit);
                 }
             },
+            CoreEvent::Detach{transporter_id, ..} => {
+                let transporter = state.unit(transporter_id);
+                if self.player_id == transporter.player_id {
+                    self.fov_unit(state, transporter);
+                }
+            },
             CoreEvent::Reveal{..} |
             CoreEvent::ShowUnit{..} |
             CoreEvent::HideUnit{..} |
             CoreEvent::LoadUnit{..} |
             CoreEvent::Attach{..} |
-
-            // TODO: хм, тут тоже надо бы расширить область видимости, как и в UnloadUnit
-            // TODO: накатай тест
-            CoreEvent::Detach{..} |
-
             CoreEvent::SetReactionFireMode{..} |
             CoreEvent::SectorOwnerChanged{..} |
             CoreEvent::Smoke{..} |
