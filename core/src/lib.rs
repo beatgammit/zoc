@@ -740,7 +740,7 @@ pub fn hit_chance(
 impl Core {
     pub fn new(options: &Options) -> Core {
         let db = Rc::new(Db::new());
-        let state = State::new_full(db.clone(), options);
+        let state = State::new_full(db.clone(), options, "Core");
         let map_size = state.map().size();
         let players_info = get_player_info_lists(db.clone(), map_size);
         let ai = Ai::new(db.clone(), options, PlayerId{id:1});

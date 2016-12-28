@@ -32,7 +32,7 @@ pub struct Ai {
 
 impl Ai {
     pub fn new(db: Rc<Db>, options: &Options, id: PlayerId) -> Ai {
-        let state = State::new_partial(db.clone(), options, id);
+        let state = State::new_partial(db.clone(), options, id, "Ai");
         let map_size = state.map().size();
         Ai {
             id: id,

@@ -57,7 +57,7 @@ pub struct PlayerInfoManager {
 impl PlayerInfoManager {
     pub fn new(db: Rc<Db>, context: &Context, options: &core::Options) -> PlayerInfoManager {
         // вот тут косяк какой-то выходит
-        let state = State::new_partial(db.clone(), options, PlayerId{id: 0});
+        let state = State::new_partial(db.clone(), options, PlayerId{id: 0}, "PlayerInfo0");
         // let state = State::new_full(db.clone(), options);
         let map_size = state.map().size();
         let mut m = HashMap::new();
@@ -72,7 +72,7 @@ impl PlayerInfoManager {
             fow: Fow::new(map_size),
         });
         if options.game_type == core::GameType::Hotseat {
-            let state2 = State::new_partial(db.clone(), options, PlayerId{id: 1});
+            let state2 = State::new_partial(db.clone(), options, PlayerId{id: 1}, "PlayerInfo1");
             // let state2 = State::new_full(db.clone(), options);
             m.insert(PlayerId{id: 1}, PlayerInfo {
                 game_state: state2,

@@ -79,7 +79,7 @@ impl<'a> Iterator for UnitsAtIter<'a> {
 #[derive(Clone)]
 pub struct UnitIter<'a> {
     pub iter: hash_map::Iter<'a, UnitId, Unit>,
-    pub fow: Option<&'a Fow>,
+    pub state: &'a State,
 }
 
 impl<'a> Iterator for UnitIter<'a> {
@@ -89,11 +89,12 @@ impl<'a> Iterator for UnitIter<'a> {
         for pair in &mut self.iter {
             let (_, unit) = pair;
             // TODO: вынеси общий с unit_opt код
-            if let Some(fow) = self.fow {
+            if let Some(ref fow) = self.state.fow {
                 if fow.is_visible(unit) {
                     return Some(pair);
                 }
             } else {
+                TODO: напиши имя состояния
                 println!(
                     "UniIter::next: Ignoring unit {:?} at {:?}",
                     unit.id, unit.pos,
@@ -123,9 +124,11 @@ pub struct State {
     db: Rc<Db>,
 
     fow: Option<Fow>,
+
+    name: String, // TODO: удали меня, когда все отладишь
 }
 
-fn basic_state(db: Rc<Db>, options: &Options) -> State {
+fn basic_state(db: Rc<Db>, options: &Options, name: &str) -> State {
     let mut score = HashMap::new();
     score.insert(PlayerId{id: 0}, Score{n: 0});
     score.insert(PlayerId{id: 1}, Score{n: 0});
@@ -143,16 +146,17 @@ fn basic_state(db: Rc<Db>, options: &Options) -> State {
         players_count: options.players_count,
         db: db,
         fow: None,
+        name: name.into(),
     }
 }
 
 impl State {
-    pub fn new_full(db: Rc<Db>, options: &Options) -> State {
-        basic_state(db, options)
+    pub fn new_full(db: Rc<Db>, options: &Options, name: &str) -> State {
+        basic_state(db, options, name)
     }
 
-    pub fn new_partial(db: Rc<Db>, options: &Options, id: PlayerId) -> State {
-        let mut state = basic_state(db.clone(), options);
+    pub fn new_partial(db: Rc<Db>, options: &Options, id: PlayerId, name: &str) -> State {
+        let mut state = basic_state(db.clone(), options, name);
         let fow = Fow::new(db, state.map().size(), id);
         state.to_partial(fow);
         state
@@ -256,7 +260,7 @@ impl State {
     pub fn units(&self) -> UnitIter {
         UnitIter {
             iter: self.units.iter(),
-            fow: self.fow.as_ref(),
+            state: self,
         }
     }
 
@@ -267,6 +271,7 @@ impl State {
                 if fow.is_visible(unit) {
                     Some(unit)
                 } else {
+                    TODO: напиши имя состояния
                     println!(
                         "unit_opt: Ignoring unit {:?} at {:?}",
                         unit.id, unit.pos,
