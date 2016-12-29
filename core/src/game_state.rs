@@ -93,12 +93,14 @@ impl<'a> Iterator for UnitIter<'a> {
                 if fow.is_visible(unit) {
                     return Some(pair);
                 }
+                // TODO: совсем убрать
+                // println!(
+                //     "({}, {}) UniIter::next: Ignoring unit {:?} at {:?}",
+                //     self.state.fow.is_some(),
+                //     unit.id,
+                //     unit.pos,
+                // );
             } else {
-                TODO: напиши имя состояния
-                println!(
-                    "UniIter::next: Ignoring unit {:?} at {:?}",
-                    unit.id, unit.pos,
-                );
                 return Some(pair);
             }
         }
@@ -123,12 +125,11 @@ pub struct State {
     players_count: i32,
     db: Rc<Db>,
 
+    // TODO: комментарий с описанием
     fow: Option<Fow>,
-
-    name: String, // TODO: удали меня, когда все отладишь
 }
 
-fn basic_state(db: Rc<Db>, options: &Options, name: &str) -> State {
+fn basic_state(db: Rc<Db>, options: &Options) -> State {
     let mut score = HashMap::new();
     score.insert(PlayerId{id: 0}, Score{n: 0});
     score.insert(PlayerId{id: 1}, Score{n: 0});
@@ -146,17 +147,16 @@ fn basic_state(db: Rc<Db>, options: &Options, name: &str) -> State {
         players_count: options.players_count,
         db: db,
         fow: None,
-        name: name.into(),
     }
 }
 
 impl State {
-    pub fn new_full(db: Rc<Db>, options: &Options, name: &str) -> State {
-        basic_state(db, options, name)
+    pub fn new_full(db: Rc<Db>, options: &Options) -> State {
+        basic_state(db, options)
     }
 
-    pub fn new_partial(db: Rc<Db>, options: &Options, id: PlayerId, name: &str) -> State {
-        let mut state = basic_state(db.clone(), options, name);
+    pub fn new_partial(db: Rc<Db>, options: &Options, id: PlayerId) -> State {
+        let mut state = basic_state(db.clone(), options);
         let fow = Fow::new(db, state.map().size(), id);
         state.to_partial(fow);
         state
@@ -271,11 +271,12 @@ impl State {
                 if fow.is_visible(unit) {
                     Some(unit)
                 } else {
-                    TODO: напиши имя состояния
-                    println!(
-                        "unit_opt: Ignoring unit {:?} at {:?}",
-                        unit.id, unit.pos,
-                    );
+                    // TODO: убрать
+                    // println!(
+                    //     "unit_opt: Ignoring unit {:?} at {:?}",
+                    //     unit.id,
+                    //     unit.pos,
+                    // );
                     None
                 }
             } else {
@@ -640,6 +641,9 @@ fn load_map(map_name: &str) -> MapInfo {
     match map_name {
         "map01" => load_map_01(),
         "map02" => load_map_02(),
+        "map03" => load_map_03(),
+        "map04" => load_map_04(),
+        "map05" => load_map_05(),
         _ => unimplemented!(),
     }
 }
@@ -800,5 +804,69 @@ fn load_map_02() -> MapInfo {
             owner_id: None,
         },
     );
+    (map, objects, sectors)
+}
+
+fn load_map_03() -> MapInfo {
+    let map_size = Size2{w: 3, h: 1};
+    let mut objects = HashMap::new();
+    let mut map = Map::new(map_size);
+    let sectors = HashMap::new();
+    for &((x, y), terrain) in &[
+        ((1, 0), Terrain::Trees),
+    ] {
+        *map.tile_mut(MapPos{v: Vector2{x: x, y: y}}) = terrain;
+    }
+    for &((x, y), player_index) in &[
+        ((0, 0), 0),
+        ((2, 0), 1),
+    ] {
+        add_reinforcement_sector(
+            &mut objects,
+            MapPos{v: Vector2{x: x, y: y}},
+            Some(PlayerId{id: player_index}),
+        );
+    }
+    (map, objects, sectors)
+}
+
+fn load_map_04() -> MapInfo {
+    let map_size = Size2{w: 2, h: 1};
+    let mut objects = HashMap::new();
+    let mut map = Map::new(map_size);
+    let sectors = HashMap::new();
+    for &((x, y), terrain) in &[
+        ((1, 0), Terrain::Trees),
+    ] {
+        *map.tile_mut(MapPos{v: Vector2{x: x, y: y}}) = terrain;
+    }
+    for &((x, y), player_index) in &[
+        ((0, 0), 0),
+        ((1, 0), 1),
+    ] {
+        add_reinforcement_sector(
+            &mut objects,
+            MapPos{v: Vector2{x: x, y: y}},
+            Some(PlayerId{id: player_index}),
+        );
+    }
+    (map, objects, sectors)
+}
+
+fn load_map_05() -> MapInfo {
+    let map_size = Size2{w: 3, h: 1};
+    let mut objects = HashMap::new();
+    let map = Map::new(map_size);
+    let sectors = HashMap::new();
+    for &((x, y), player_index) in &[
+        ((0, 0), 0),
+        ((2, 0), 1),
+    ] {
+        add_reinforcement_sector(
+            &mut objects,
+            MapPos{v: Vector2{x: x, y: y}},
+            Some(PlayerId{id: player_index}),
+        );
+    }
     (map, objects, sectors)
 }

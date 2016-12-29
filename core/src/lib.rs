@@ -431,8 +431,27 @@ pub fn unit_to_info(unit: &Unit) -> UnitInfo {
 #[derive(Clone, Debug)]
 struct PlayerInfo {
     events: VecDeque<CoreEvent>,
-    fow: Fow,
     visible_enemies: HashSet<UnitId>,
+    fow: Option<Fow>, // TODO: пояснить почему Option
+}
+
+impl PlayerInfo {
+    fn new(db: Rc<Db>, player_id: PlayerId, map_size: Size2) -> PlayerInfo {
+        let fow = Fow::new(db, map_size, player_id);
+        PlayerInfo {
+            fow: Some(fow),
+            events: VecDeque::new(),
+            visible_enemies: HashSet::new(),
+        }
+    }
+
+    fn fow(&self) -> &Fow {
+        self.fow.as_ref().unwrap()
+    }
+
+    fn fow_mut(&mut self) -> &mut Fow {
+        self.fow.as_mut().unwrap()
+    }
 }
 
 pub fn print_unit_info(db: &Db, unit: &Unit) {
@@ -547,18 +566,12 @@ fn get_players_list(options: &Options) -> Vec<Player> {
     )
 }
 
-fn get_player_info_lists(db: Rc<Db>, map_size: Size2) -> HashMap<PlayerId, PlayerInfo> {
+fn get_player_info_lists(db: &Rc<Db>, map_size: Size2) -> HashMap<PlayerId, PlayerInfo> {
     let mut map = HashMap::new();
-    map.insert(PlayerId{id: 0}, PlayerInfo {
-        fow: Fow::new(db.clone(), map_size, PlayerId{id: 0}),
-        events: VecDeque::new(),
-        visible_enemies: HashSet::new(),
-    });
-    map.insert(PlayerId{id: 1}, PlayerInfo {
-        fow: Fow::new(db, map_size, PlayerId{id: 1}),
-        events: VecDeque::new(),
-        visible_enemies: HashSet::new(),
-    });
+    map.insert(PlayerId{id: 0}, PlayerInfo::new(
+        db.clone(), PlayerId{id: 0}, map_size));
+    map.insert(PlayerId{id: 1}, PlayerInfo::new(
+        db.clone(), PlayerId{id: 1}, map_size));
     map
 }
 
@@ -740,9 +753,8 @@ pub fn hit_chance(
 impl Core {
     pub fn new(options: &Options) -> Core {
         let db = Rc::new(Db::new());
-        let state = State::new_full(db.clone(), options, "Core");
-        let map_size = state.map().size();
-        let players_info = get_player_info_lists(db.clone(), map_size);
+        let state = State::new_full(db.clone(), options);
+        let players_info = get_player_info_lists(&db, state.map().size());
         let ai = Ai::new(db.clone(), options, PlayerId{id:1});
         Core {
             state: state,
@@ -827,7 +839,7 @@ impl Core {
         let suppression = hit_chance.n / 2;
         let killed = cmp::min(
             defender.count, self.get_killed_count(attacker, defender));
-        let fow = &self.players_info[&defender.player_id].fow;
+        let fow = self.players_info[&defender.player_id].fow();
         let is_visible = fow.is_visible(attacker);
         let ambush_chance = 70;
         let is_ambush = !is_visible
@@ -861,7 +873,7 @@ impl Core {
             return false;
         }
         // TODO: move to `check_attack`
-        let fow = &self.players_info[&attacker.player_id].fow;
+        let fow = self.players_info[&attacker.player_id].fow();
         if !fow.is_visible(defender) {
             return false;
         }
@@ -927,24 +939,19 @@ impl Core {
         }}
     }
 
-    fn simulation_step(&mut self, command: Command) {
-        /*
-        if let Err(err) = check_command(
-            &self.db,
-            self.current_player_id,
-            &TmpPartialState::new(
-                &self.state,
-                &self.players_info[&self.current_player_id].fow,
-            ),
-            &command,
-        ) {
+    fn check_command(&mut self, command: &Command) {
+        // TODO: документировать
+        // двигаем туман туда-сюда и вызываем проверку
+        let id = self.current_player_id;
+        let mut i = self.players_info.get_mut(&id).unwrap();
+        self.state.to_partial(i.fow.take().unwrap());
+        if let Err(err) = check_command(&self.db, id, &self.state, command) {
             panic!("Bad command: {:?} ({:?})", err, command);
         }
-        */
-        {
-            // двигаем туман туда-сюда
-            // и вызываем проверку
-        }
+        i.fow = Some(self.state.to_full());
+    }
+
+    fn simulation_step(&mut self, command: Command) {
         match command {
             Command::EndTurn => {
                 let old_id = self.current_player_id;
@@ -1137,6 +1144,7 @@ impl Core {
     }
 
     pub fn do_command(&mut self, command: Command) {
+        self.check_command(&command);
         self.simulation_step(command);
     }
 
@@ -1175,16 +1183,16 @@ impl Core {
             let (filtered_events, active_unit_ids) = filter::filter_events(
                 &self.state,
                 player.id,
-                &self.players_info[&player.id].fow,
+                self.players_info[&player.id].fow(),
                 event,
             );
             let mut i = self.players_info.get_mut(&player.id)
                 .expect("core: Can`t get player`s info");
             for event in filtered_events {
-                i.fow.apply_event(&self.state, &event);
+                i.fow_mut().apply_event(&self.state, &event);
                 i.events.push_back(event);
                 let new_visible_enemies = filter::get_visible_enemies(
-                    &self.state, &i.fow, player.id);
+                    &self.state, i.fow(), player.id);
                 let show_hide_events = filter::show_or_hide_passive_enemies(
                     &self.state,
                     &active_unit_ids,

@@ -46,7 +46,9 @@ pub struct PlayerInfo {
     pub pathfinder: Pathfinder,
     pub scene: Scene,
     pub camera: Camera,
-    pub fow: Fow, // Это точно еще нужно????
+    pub fow: Fow, // TODO: Это точно еще нужно? Вставь в состояние просто
+    // хотя там возникают сложности с видимостью отрядов врага,
+    // кторые в туман войны уходят :(
 }
 
 #[derive(Clone, Debug)]
@@ -56,9 +58,11 @@ pub struct PlayerInfoManager {
 
 impl PlayerInfoManager {
     pub fn new(db: Rc<Db>, context: &Context, options: &core::Options) -> PlayerInfoManager {
-        // вот тут косяк какой-то выходит
-        let state = State::new_partial(db.clone(), options, PlayerId{id: 0}, "PlayerInfo0");
-        // let state = State::new_full(db.clone(), options);
+        // TODO: вот тут косяк какой-то выходит
+        // надо вернуть new_partial,
+        // а туман войны этот убрать
+        // let state = State::new_partial(db.clone(), options, PlayerId{id: 0});
+        let state = State::new_full(db.clone(), options);
         let map_size = state.map().size();
         let mut m = HashMap::new();
         let mut camera = Camera::new(context.win_size());
@@ -72,8 +76,8 @@ impl PlayerInfoManager {
             fow: Fow::new(map_size),
         });
         if options.game_type == core::GameType::Hotseat {
-            let state2 = State::new_partial(db.clone(), options, PlayerId{id: 1}, "PlayerInfo1");
-            // let state2 = State::new_full(db.clone(), options);
+            // let state2 = State::new_partial(db.clone(), options, PlayerId{id: 1});
+            let state2 = State::new_full(db.clone(), options);
             m.insert(PlayerId{id: 1}, PlayerInfo {
                 game_state: state2,
                 pathfinder: Pathfinder::new(db, map_size),
