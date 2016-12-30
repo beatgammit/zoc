@@ -95,8 +95,7 @@ impl<'a> Iterator for UnitIter<'a> {
                 }
                 // TODO: совсем убрать
                 // println!(
-                //     "({}, {}) UniIter::next: Ignoring unit {:?} at {:?}",
-                //     self.state.fow.is_some(),
+                //     "UniIter::next: Ignoring unit {:?} at {:?}",
                 //     unit.id,
                 //     unit.pos,
                 // );
