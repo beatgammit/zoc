@@ -46,7 +46,7 @@ pub struct PlayerInfo {
     pub pathfinder: Pathfinder,
     pub scene: Scene,
     pub camera: Camera,
-    pub fow: Fow, // твою мать, это вообще не тот Fow
+    pub fow: Fow,
 }
 
 #[derive(Clone, Debug)]
@@ -56,7 +56,7 @@ pub struct PlayerInfoManager {
 
 impl PlayerInfoManager {
     pub fn new(db: Rc<Db>, context: &Context, options: &core::Options) -> PlayerInfoManager {
-        let state = State::new_full(db.clone(), options);
+        let state = State::new_partial(db.clone(), options, PlayerId{id: 0});
         let map_size = state.map().size();
         let mut m = HashMap::new();
         let mut camera = Camera::new(context.win_size());
@@ -70,7 +70,7 @@ impl PlayerInfoManager {
             fow: Fow::new(map_size),
         });
         if options.game_type == core::GameType::Hotseat {
-            let state2 = State::new_full(db.clone(), options);
+            let state2 = State::new_partial(db.clone(), options, PlayerId{id: 1});
             m.insert(PlayerId{id: 1}, PlayerInfo {
                 game_state: state2,
                 pathfinder: Pathfinder::new(db, map_size),
