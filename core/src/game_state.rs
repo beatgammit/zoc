@@ -166,6 +166,10 @@ impl State {
         self.fow.take().unwrap()
     }
 
+    pub fn is_partial(&self) -> bool {
+        self.fow.is_some()
+    }
+
     /// Converts active ap (attack points) to reactive
     fn convert_ap(&mut self, player_id: PlayerId) {
         for (_, unit) in &mut self.units {
@@ -321,7 +325,6 @@ impl State {
         &self.reinforcement_points
     }
 
-    // TODO: нужно?
     pub fn is_ground_tile_visible(&self, pos: MapPos) -> bool {
         if let Some(ref fow) = self.fow {
             fow.is_ground_tile_visible(pos)

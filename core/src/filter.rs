@@ -55,13 +55,13 @@ pub fn show_or_hide_passive_enemies(
     events
 }
 
-// TODO: join state and fow into TmpPartialState (TODO: обнови)
 pub fn filter_events(
     state: &State,
     player_id: PlayerId,
     fow: &Fow,
     event: &CoreEvent,
 ) -> (Vec<CoreEvent>, HashSet<UnitId>) {
+    assert!(!state.is_partial());
     let mut active_unit_ids = HashSet::new();
     let mut events = vec![];
     match *event {
