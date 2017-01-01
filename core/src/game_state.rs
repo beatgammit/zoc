@@ -1,4 +1,5 @@
 use std::collections::hash_map::{self, HashMap};
+use std::collections::{HashSet};
 use std::rc::{Rc};
 use cgmath::{Vector2};
 use types::{Size2};
@@ -88,18 +89,7 @@ impl<'a> Iterator for UnitIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         for pair in &mut self.iter {
             let (_, unit) = pair;
-            // TODO: вынеси общий с unit_opt код
-            if let Some(ref fow) = self.state.fow {
-                if fow.is_visible(unit) {
-                    return Some(pair);
-                }
-                // TODO: совсем убрать
-                // println!(
-                //     "UniIter::next: Ignoring unit {:?} at {:?}",
-                //     unit.id,
-                //     unit.pos,
-                // );
-            } else {
+            if self.state.is_unit_visible(unit) {
                 return Some(pair);
             }
         }
@@ -115,7 +105,9 @@ pub enum InfoLevel {
 
 #[derive(Clone, Debug)]
 pub struct State {
+    // TODO: найти все прямые обращения и заменить на обращения с фильтрами
     units: HashMap<UnitId, Unit>,
+
     objects: HashMap<ObjectId, Object>,
     map: Map<Terrain>,
     sectors: HashMap<SectorId, Sector>,
@@ -126,6 +118,8 @@ pub struct State {
 
     // TODO: комментарий с описанием
     fow: Option<Fow>,
+
+    shown_unit_ids: HashSet<UnitId>,
 }
 
 fn basic_state(db: Rc<Db>, options: &Options) -> State {
@@ -146,6 +140,7 @@ fn basic_state(db: Rc<Db>, options: &Options) -> State {
         players_count: options.players_count,
         db: db,
         fow: None,
+        shown_unit_ids: HashSet::new(),
     }
 }
 
@@ -263,23 +258,20 @@ impl State {
         }
     }
 
+    fn is_unit_visible(&self, unit: &Unit) -> bool {
+        let fow = match self.fow {
+            Some(ref fow) => fow,
+            None => return true,
+        };
+        fow.is_visible(unit) || self.shown_unit_ids.contains(&unit.id)
+    }
+
     pub fn unit_opt(&self, id: UnitId) -> Option<&Unit> {
         self.units.get(&id).and_then(|unit| {
-            if let Some(ref fow) = self.fow {
-                // TODO: вынести общий код
-                if fow.is_visible(unit) {
-                    Some(unit)
-                } else {
-                    // TODO: убрать
-                    // println!(
-                    //     "unit_opt: Ignoring unit {:?} at {:?}",
-                    //     unit.id,
-                    //     unit.pos,
-                    // );
-                    None
-                }
-            } else {
+            if self.is_unit_visible(unit) {
                 Some(unit)
+            } else {
+                None
             }
         })
     }
@@ -360,6 +352,7 @@ impl State {
                 }
             },
             CoreEvent::EndTurn{new_id, old_id} => {
+                self.shown_unit_ids.clear();
                 {
                     let reinforcement_points = self.reinforcement_points
                         .get_mut(&old_id).unwrap();
@@ -442,6 +435,7 @@ impl State {
             CoreEvent::Reveal{..} => (),
             CoreEvent::ShowUnit{ref unit_info} => {
                 self.add_unit(unit_info, InfoLevel::Partial);
+                self.shown_unit_ids.insert(unit_info.unit_id);
             },
             CoreEvent::HideUnit{unit_id} => {
                 assert!(self.units.get(&unit_id).is_some());

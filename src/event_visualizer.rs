@@ -442,14 +442,15 @@ pub struct EventHideUnitVisualizer;
 impl EventHideUnitVisualizer {
     pub fn new(
         scene: &mut Scene,
-        state: &State,
+        _: &State,
         unit_id: UnitId,
         map_text: &mut MapTextManager,
     ) -> Box<EventVisualizer> {
         // passenger doesn't have any scene node
-        if scene.unit_id_to_node_id_opt(unit_id).is_some() {
-            let pos = state.unit(unit_id).pos.map_pos;
-            map_text.add_text(pos, "lost");
+        if let Some(node_id) = scene.unit_id_to_node_id_opt(unit_id) {
+            let world_pos = scene.node(node_id).pos;
+            let map_pos = geom::world_pos_to_map_pos(world_pos);
+            map_text.add_text(map_pos, "lost");
             scene.remove_unit(unit_id);
         }
         Box::new(EventHideUnitVisualizer)
