@@ -191,7 +191,6 @@ fn test_transporter_with_attached_unit_comes_out_of_fow() {
     core.wait_end_turn(0, 1);
 }
 
-// /*
 #[test]
 fn test_jeep_moves_into_invisible_enemy_jeep() {
     let pos1 = MapPos{v: Vector2{x: 0, y: 0}};
@@ -277,4 +276,3 @@ fn test_can_see_air_unit() {
     core.wait_end_turn(1, 0);
     assert_eq!(core.get_event(), None);
 }
-// */
