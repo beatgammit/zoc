@@ -107,6 +107,7 @@ pub fn check_command(
     state: &State,
     command: &Command,
 ) -> Result<(), CommandError> {
+    assert!(state.is_partial());
     match *command {
         Command::EndTurn => Ok(()),
         Command::CreateUnit{pos, type_id} => {

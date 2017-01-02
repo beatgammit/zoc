@@ -448,6 +448,9 @@ impl EventHideUnitVisualizer {
     ) -> Box<EventVisualizer> {
         // passenger doesn't have any scene node
         if let Some(node_id) = scene.unit_id_to_node_id_opt(unit_id) {
+            // We can't read 'pos' from `state.unit(unit_id).pos`
+            // because this unit may be in a fogged tile now
+            // so State will filter him out.
             let world_pos = scene.node(node_id).pos;
             let map_pos = geom::world_pos_to_map_pos(world_pos);
             map_text.add_text(map_pos, "lost");

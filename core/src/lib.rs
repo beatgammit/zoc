@@ -432,7 +432,13 @@ pub fn unit_to_info(unit: &Unit) -> UnitInfo {
 struct PlayerInfo {
     events: VecDeque<CoreEvent>,
     visible_enemies: HashSet<UnitId>,
-    fow: Option<Fow>, // TODO: пояснить почему Option
+
+    // This filed is optional because we need to temporary
+    // put its Fow into Core's State for filtering events.
+    //
+    // See State::to_full, State:to_partial
+    //
+    fow: Option<Fow>,
 }
 
 impl PlayerInfo {
@@ -940,8 +946,6 @@ impl Core {
     }
 
     fn check_command(&mut self, command: &Command) {
-        // TODO: документировать
-        // двигаем туман туда-сюда и вызываем проверку
         let id = self.current_player_id;
         let mut i = self.players_info.get_mut(&id).unwrap();
         self.state.to_partial(i.fow.take().unwrap());

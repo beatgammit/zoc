@@ -105,9 +105,7 @@ pub enum InfoLevel {
 
 #[derive(Clone, Debug)]
 pub struct State {
-    // TODO: найти все прямые обращения и заменить на обращения с фильтрами
     units: HashMap<UnitId, Unit>,
-
     objects: HashMap<ObjectId, Object>,
     map: Map<Terrain>,
     sectors: HashMap<SectorId, Sector>,
@@ -116,9 +114,16 @@ pub struct State {
     players_count: i32,
     db: Rc<Db>,
 
-    // TODO: комментарий с описанием
+    // If this field is None then the State is considered "Full State"
+    // (contains all information), otherwise the State is "Partial State"
+    // (contains player-specific view on the game).
+    //
+    // When this field is Some there's no external access to units
+    // in fogged tiles.
+    //
     fow: Option<Fow>,
 
+    /// Hack for not filtering fogged units from ShowUnit events
     shown_unit_ids: HashSet<UnitId>,
 }
 
